@@ -1,0 +1,36 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: salary-system
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/salary_db?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    # 本地开发密码。推送到 Gitee 前请确认仓库是私有的；正式环境请改用环境变量。
+    password: "${MYSQL_PASSWORD:qetu1017}"
+
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mybatis-plus:
+  # 以后写 XML 时放这里；目前用注解 SQL，保留配置不影响启动
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.example.salarysystem.entity
+  configuration:
+    # 数据库下划线字段 -> Java 驼峰属性：emp_no -> empNo
+    map-underscore-to-camel-case: true
+    # 开发期把 SQL 打到控制台，方便排查；生产环境换成 Slf4jImpl
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    banner: false
+    db-config:
+      # 主键策略：数据库自增
+      id-type: auto
+
+logging:
+  level:
+    com.example.salarysystem.mapper: debug

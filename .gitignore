@@ -1,0 +1,74 @@
+# ============================================================
+# 员工薪资管理系统 .gitignore
+# 目标：编译产物、IDE 配置、依赖目录、本地密钥一律不进仓库
+# ============================================================
+
+# ---------- Java / Maven ----------
+target/
+*.class
+*.jar
+*.war
+*.ear
+hs_err_pid*
+replay_pid*
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ---------- IntelliJ IDEA ----------
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+*.hprof
+
+# ---------- Eclipse / STS ----------
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# ---------- VS Code ----------
+.vscode/
+
+# ---------- NetBeans ----------
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+# ---------- 前端 Vue / Node ----------
+frontend/node_modules/
+node_modules/
+frontend/dist/
+dist/
+dist-ssr/
+coverage/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- 本地环境与密钥 ----------
+.env
+.env.*
+!.env.example
+application-local.yml
+application-local.yaml
+*.log
+logs/
+
+# ---------- 操作系统 ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- 其他 ----------
+HELP.md
