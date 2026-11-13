@@ -19,7 +19,6 @@
             placeholder="请输入用户名"
             clearable
             autocomplete="username"
-            @keyup.enter="handleLogin"
           />
         </el-form-item>
 
@@ -30,17 +29,17 @@
             placeholder="请输入密码"
             show-password
             autocomplete="current-password"
-            @keyup.enter="handleLogin"
           />
         </el-form-item>
 
         <el-form-item>
+          <!-- 只保留 submit 一个入口：点击按钮触发 <form> submit，回车也触发 submit，
+               避免 click + submit + keyup.enter 三重触发导致重复请求 -->
           <el-button
             class="login-button"
             type="primary"
             :loading="loading"
             native-type="submit"
-            @click="handleLogin"
           >
             {{ loading ? '登录中...' : '登 录' }}
           </el-button>
@@ -82,16 +81,18 @@ const rules = {
  * 所以 token 位于 res.data.token（而不是 res.token）。
  */
 async function handleLogin() {
+  // 同步置位，先于任何 await：即使有多个触发源，也只会放行一次请求
   if (loading.value) return
+  loading.value = true
 
   try {
     await formRef.value.validate()
   } catch {
-    // 表单校验未通过，Element Plus 已给出提示，直接返回
+    // 表单校验未通过，Element Plus 已给出提示，恢复按钮后返回
+    loading.value = false
     return
   }
 
-  loading.value = true
   try {
     const res = await request.post('/auth/login', {
       username: form.username,
