@@ -21,6 +21,9 @@
 - 员工列表（连表带部门名称）
 - 员工分页 + 姓名/工号关键字搜索
 - 员工详情
+- 员工新增、完整修改、删除/离职（保留薪资历史）
+- 员工参数校验、工号唯一检查、部门 ID / 名称组合筛选
+- 部门下拉查询（id、deptName）
 - 统一返回结构 `Result<T>` / `PageResult<T>`
 - MyBatis-Plus 分页插件、驼峰映射、SQL 控制台日志
 - 本地联调 CORS
@@ -34,9 +37,10 @@ salary-system/
 │   ├── SalarySystemApplication.java
 │   ├── common/                 # Result、PageResult
 │   ├── config/                 # MyBatis-Plus 配置
-│   ├── controller/             # EmployeeController
-│   ├── entity/                 # SysEmployee
-│   ├── mapper/                 # SysEmployeeMapper
+│   ├── controller/             # 员工、部门下拉及模块异常处理
+│   ├── dto/                    # 员工新增/修改参数校验
+│   ├── entity/                 # SysEmployee、SysDepartment
+│   ├── mapper/                 # 员工、部门数据库访问
 │   ├── service/                # 接口 + impl
 │   └── vo/                     # EmployeeVO
 ├── src/main/resources/
@@ -112,10 +116,10 @@ npm run dev
 | GET | `/api/employees` | 全部员工（带部门名） | 已完成 |
 | GET | `/api/employees/page` | 分页 + 关键字搜索 | 已完成 |
 | GET | `/api/employees/{id}` | 员工详情 | 已完成 |
-| POST | `/api/employees` | 新增员工 | 组员 A |
-| PUT | `/api/employees/{id}` | 修改员工 | 组员 A |
-| DELETE | `/api/employees/{id}` | 删除/离职 | 组员 A |
-| GET | `/api/departments` | 部门下拉 | 组员 A |
+| POST | `/api/employees` | 新增员工 | 已完成 |
+| PUT | `/api/employees/{id}` | 完整修改员工 | 已完成 |
+| DELETE | `/api/employees/{id}` | 删除/离职 | 已完成 |
+| GET | `/api/departments` | 部门下拉 | 已完成 |
 
 ## 分支与提交规范
 
@@ -148,4 +152,6 @@ refactor(common): 抽取 PageResult
 - [接口契约](docs/api.md)
 - [数据库初始化脚本](docs/init.sql)
 - [组员任务书](docs/team-tasks.md)
+- [员工模块开发、测试与交接说明](docs/employee-development.md)
+- [Postman 员工管理集合](docs/postman/employee-management.postman_collection.json)
 - [组长进阶路线](docs/roadmap.md)

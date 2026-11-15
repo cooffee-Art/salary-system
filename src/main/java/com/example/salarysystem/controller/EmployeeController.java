@@ -4,6 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.salarysystem.common.PageResult;
 import com.example.salarysystem.common.Result;
 import com.example.salarysystem.entity.SysEmployee;
+import com.example.salarysystem.dto.EmployeeSaveDTO;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import com.example.salarysystem.service.SysEmployeeService;
 import com.example.salarysystem.vo.EmployeeVO;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +16,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -43,17 +50,35 @@ public class EmployeeController {
     public Result<PageResult<EmployeeVO>> page(
             @RequestParam(defaultValue = "1") long current,
             @RequestParam(defaultValue = "10") long size,
-            @RequestParam(required = false) String keyword) {
-        Page<EmployeeVO> page = employeeService.pageEmployees(current, size, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) @Positive Integer deptId,
+            @RequestParam(required = false) String deptName) {
+        Page<EmployeeVO> page = employeeService.pageEmployees(current, size, keyword, deptId, deptName);
         return Result.success(PageResult.of(page));
     }
 
     @GetMapping("/{id}")
-    public Result<SysEmployee> detail(@PathVariable Integer id) {
+    public Result<SysEmployee> detail(@PathVariable @Positive Integer id) {
         SysEmployee employee = employeeService.getById(id);
         if (employee == null) {
             return Result.error(404, "员工不存在");
         }
         return Result.success(employee);
+    }
+
+    @PostMapping
+    public Result<SysEmployee> create(@Valid @RequestBody EmployeeSaveDTO request) {
+        return Result.success(employeeService.createEmployee(request));
+    }
+
+    @PutMapping("/{id}")
+    public Result<SysEmployee> update(@PathVariable @Positive Integer id,
+                                      @Valid @RequestBody EmployeeSaveDTO request) {
+        return Result.success(employeeService.updateEmployee(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public Result<String> delete(@PathVariable @Positive Integer id) {
+        return Result.success(employeeService.deleteEmployee(id));
     }
 }
