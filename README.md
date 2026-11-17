@@ -12,7 +12,7 @@
 | 后端 | JDK | 21（本机用 25 也能编译运行） |
 | 前端 | Vue 3 + Vite | 待组员 B 搭建 |
 | 前端 | Element Plus + Axios | 待组员 B 搭建 |
-| 工具 | IDEA / HeidiSQL / Git / Gitee | — |
+| 工具 | IDEA / HeidiSQL / Git / GitHub / Gitee | — |
 
 > 版本注意：Spring Boot 4 的 Web starter 叫 `spring-boot-starter-webmvc`；MyBatis-Plus 3.5.18 的 `IService` / `ServiceImpl` 包名是 `com.baomidou.mybatisplus.spring.service`，旧教程里的 `...extension.service` 会编译不过。
 
