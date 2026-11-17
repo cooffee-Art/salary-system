@@ -16,8 +16,8 @@ import java.util.List;
 public interface SysSalaryMapper extends BaseMapper<SysSalary> {
 
     /**
-     * 薪资分页：员工、部门、薪资三表连查。
-     * LEFT JOIN 部门，保证没有部门的员工也能显示。
+     * 薪资列表 / 分页：员工、部门、薪资三表连查。
+     * LEFT JOIN 保证员工或部门信息缺失时，薪资记录仍然能查出来。
      */
     @Select("""
             <script>
@@ -34,27 +34,86 @@ public interface SysSalaryMapper extends BaseMapper<SysSalary> {
                    s.actual_pay,
                    s.create_time
             FROM sys_salary s
-            JOIN sys_employee e ON e.id = s.emp_id
+            LEFT JOIN sys_employee e ON e.id = s.emp_id
             LEFT JOIN sys_department d ON d.id = e.dept_id
             <where>
-                <if test="month != null and month != ''">
-                    AND s.salary_month = #{month}
+                <if test="salaryMonth != null and salaryMonth != ''">
+                    AND s.salary_month = #{salaryMonth}
+                </if>
+                <if test="empId != null">
+                    AND s.emp_id = #{empId}
                 </if>
                 <if test="keyword != null and keyword != ''">
                     AND (e.name LIKE CONCAT('%', #{keyword}, '%')
                          OR e.emp_no LIKE CONCAT('%', #{keyword}, '%'))
                 </if>
             </where>
-            ORDER BY s.salary_month DESC, e.emp_no
+            ORDER BY s.id
+            </script>
+            """)
+    List<SalaryVO> selectSalaryList(@Param("salaryMonth") String salaryMonth,
+                                    @Param("empId") Integer empId,
+                                    @Param("keyword") String keyword);
+
+    @Select("""
+            <script>
+            SELECT s.id,
+                   s.emp_id,
+                   e.emp_no,
+                   e.name AS emp_name,
+                   e.dept_id,
+                   d.dept_name,
+                   s.salary_month,
+                   s.base_pay,
+                   s.bonus,
+                   s.deduction,
+                   s.actual_pay,
+                   s.create_time
+            FROM sys_salary s
+            LEFT JOIN sys_employee e ON e.id = s.emp_id
+            LEFT JOIN sys_department d ON d.id = e.dept_id
+            <where>
+                <if test="salaryMonth != null and salaryMonth != ''">
+                    AND s.salary_month = #{salaryMonth}
+                </if>
+                <if test="empId != null">
+                    AND s.emp_id = #{empId}
+                </if>
+                <if test="keyword != null and keyword != ''">
+                    AND (e.name LIKE CONCAT('%', #{keyword}, '%')
+                         OR e.emp_no LIKE CONCAT('%', #{keyword}, '%'))
+                </if>
+            </where>
+            ORDER BY s.id
             </script>
             """)
     Page<SalaryVO> selectSalaryPage(Page<SalaryVO> page,
-                                    @Param("month") String month,
+                                    @Param("salaryMonth") String salaryMonth,
+                                    @Param("empId") Integer empId,
                                     @Param("keyword") String keyword);
 
+    @Select("""
+            SELECT s.id,
+                   s.emp_id,
+                   e.emp_no,
+                   e.name AS emp_name,
+                   e.dept_id,
+                   d.dept_name,
+                   s.salary_month,
+                   s.base_pay,
+                   s.bonus,
+                   s.deduction,
+                   s.actual_pay,
+                   s.create_time
+            FROM sys_salary s
+            LEFT JOIN sys_employee e ON e.id = s.emp_id
+            LEFT JOIN sys_department d ON d.id = e.dept_id
+            WHERE s.id = #{id}
+            """)
+    SalaryVO selectDetailById(@Param("id") Integer id);
+
     /**
-     * 部门月度薪资汇总：报表核心 SQL。
-     * COUNT(DISTINCT e.id) 防止一个员工同月多条记录导致人数虚高。
+     * 部门月度薪资汇总。
      */
     @Select("""
             SELECT d.id AS dept_id,

@@ -1,15 +1,28 @@
 package com.example.salarysystem.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.spring.service.IService;
+import com.example.salarysystem.dto.SalarySaveDTO;
+import com.example.salarysystem.entity.SysSalary;
 import com.example.salarysystem.vo.DeptSalaryReportVO;
 import com.example.salarysystem.vo.SalaryGenerateResult;
 import com.example.salarysystem.vo.SalaryVO;
 
 import java.util.List;
 
-public interface SysSalaryService {
+public interface SysSalaryService extends IService<SysSalary> {
 
-    Page<SalaryVO> page(String month, String keyword, long current, long size);
+    List<SalaryVO> list(String salaryMonth, Integer empId, String keyword);
+
+    Page<SalaryVO> pageSalaries(long current, long size, String salaryMonth, Integer empId, String keyword);
+
+    SalaryVO getDetail(Integer id);
+
+    SysSalary createSalary(SalarySaveDTO request);
+
+    SysSalary updateSalary(Integer id, SalarySaveDTO request);
+
+    void deleteSalary(Integer id);
 
     List<DeptSalaryReportVO> departmentReport(String month);
 

@@ -7,6 +7,9 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 薪资列表 / 详情展示对象：在薪资表字段之外，连表带出员工工号、姓名和部门。
+ */
 @Data
 public class SalaryVO implements Serializable {
 
