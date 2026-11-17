@@ -184,6 +184,7 @@ refactor(common): 抽取 PageResult
 - [接口契约](docs/api.md)
 - [数据库初始化脚本](docs/init.sql)
 - [组员任务书](docs/team-tasks.md)
+- [B/C 当前迭代工作清单](docs/backlog-b-c.md)
 - [员工模块开发、测试与交接说明](docs/employee-development.md)
 - [Postman 员工管理集合](docs/postman/employee-management.postman_collection.json)
 - [组长进阶路线](docs/roadmap.md)
