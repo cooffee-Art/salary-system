@@ -221,16 +221,17 @@ git checkout dev
 git checkout -b feature/db-review
 
 二、数据库现状（HeidiSQL 里确认）
+- sys_user：id、username、password、role、status、create_time
 - sys_department：id、dept_name、create_time
 - sys_employee：id、emp_no、name、gender、phone、dept_id、hire_date、status
 - sys_salary：id、emp_id、salary_month、base_pay、bonus、deduction、actual_pay、create_time
-- 关系：部门 1:N 员工，员工 1:N 薪资
+- 关系：部门 1:N 员工，员工 1:N 薪资；sys_user 独立
 
 三、你要做的四件事
 1. ER 图 + 字段评审（第 1 天）
-   - 用 draw.io / ProcessOn 画三张表的关系图，标出主键、外键、1:N
+   - 用 draw.io / ProcessOn 画四张表的关系图，标出主键、外键、1:N（sys_user 可单独画）
    - 检查：主键自增、emp_no 唯一、外键是否生效、金额 decimal(10,2)、status 默认 1、create_time 默认当前时间
-   - 重点：sys_salary 目前没有“同一员工同一月份唯一”的约束，评估是否加 uk_emp_month(emp_id, salary_month)，把结论写进 docs/db-review.md
+   - 重点：确认 sys_salary 的 uk_emp_month(emp_id, salary_month) 是否生效，密码是否为 BCrypt 哈希，把结论写进 docs/db-review.md
 2. 建表 + 测试数据 SQL（第 2 天）
    - 以 docs/init.sql 为基线，核对是否和现库一致；有修改就更新它
    - 在本地新建 salary_db_test 库跑一遍，确保从零能建成功
@@ -238,13 +239,18 @@ git checkout -b feature/db-review
    - 不要直接动 salary_db 的正式数据，先在测试库验证
 3. 每日接口验收（每天 21:00）
    - 用 Apifox / Postman 建一个“员工薪资系统”集合，环境变量 baseUrl=http://localhost:8080
+   - 先调 POST /api/auth/login 拿 Token，后续请求加 Authorization: Bearer <token>
    - 按 docs/api.md 逐个跑：
+     POST /api/auth/login（正确密码 / 错误密码）
      GET /api/employees
      GET /api/employees/page（正常、keyword、current=0、size=1000）
      GET /api/employees/{id}（存在 / 不存在）
-     POST / PUT / DELETE（A 做好后）
+     POST / PUT / DELETE
      GET /api/departments
-   - 重点测：重复工号、删除有薪资的员工、日期格式、手机号非法、keyword 传 ' OR 1=1 --
+     GET /api/salaries/page?month=2024-09
+     GET /api/salaries/report/department?month=2024-09
+     POST /api/salaries/generate?month=2024-10（生成一次 / 重复生成）
+   - 重点测：未带 Token 401、重复工号、删除有薪资的员工、日期格式、手机号非法、keyword 传 ' OR 1=1 --
    - 发现问题记录到 docs/test/bugs.md：编号、严重级别、复现步骤、期望 / 实际、截图、负责人
 4. 每天 21:30 在群里发验收报告
    格式：
@@ -278,7 +284,7 @@ C，你这个位置最容易被动“等别人写完再测”。主动一点：A
 
 ### 组长验收要点
 
-- [ ] ER 图能讲清楚三张表的关系
+- [ ] ER 图能讲清楚四张表的关系
 - [ ] `init.sql` 在空库一次执行成功
 - [ ] `emp_no` 唯一、外键有效、金额精度正确
 - [ ] 是否加 `uk_emp_month` 有明确结论（加或不加都要有理由）

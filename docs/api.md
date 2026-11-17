@@ -232,9 +232,155 @@ current 小于 1 时按 1 处理，size 限制在 1–100；超出最后一页�
 员工 ID 必须为正整数；非法 ID、错误数字/日期格式、空请求体、校验失败、
 重复工号和无效部门均返回业务码 400，data 为 null。
 不存在的员工返回业务码 404。业务失败沿用 HTTP 200 + body.code 契约。
-员工和部门控制器使用模块范围的异常处理器，后续由组长整合到全局异常处理。
+员工、部门、登录、薪资模块共用全局异常处理器。
 
-## 5. 联调约定
+## 5. 登录鉴权
+
+### 5.1 登录
+
+`POST /api/auth/login`
+
+请求体：
+
+```json
+{
+  "username": "admin",
+  "password": "admin123"
+}
+```
+
+成功响应：
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiJ9...",
+    "tokenType": "Bearer",
+    "expiresIn": 7200,
+    "username": "admin",
+    "role": "ADMIN"
+  }
+}
+```
+
+默认本地账号：`admin / admin123`，仅用于课堂练习，上线前必须修改。
+
+### 5.2 当前登录人
+
+`GET /api/auth/me`
+
+请求头：
+
+```text
+Authorization: Bearer <token>
+```
+
+响应：
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "username": "admin",
+    "role": "ADMIN"
+  }
+}
+```
+
+### 5.3 鉴权约定
+
+- 除 `POST /api/auth/login` 外，所有 `/api/**` 都需要 `Authorization: Bearer <token>`。
+- 未携带或 Token 无效：HTTP 401，body 为 `{"code":401,"message":"未登录或登录已过期","data":null}`。
+- Token 默认 2 小时过期；过期后重新登录。
+- 角色字段为 `ADMIN / HR / EMPLOYEE`，后续可在此基础上做接口级权限。
+
+## 6. 薪资接口
+
+### 6.1 薪资分页
+
+`GET /api/salaries/page?month=2024-09&keyword=张&current=1&size=10`
+
+| 参数 | 必填 | 说明 |
+| --- | --- | --- |
+| month | 否 | `yyyy-MM`，不传查全部月份 |
+| keyword | 否 | 员工姓名或工号模糊搜索 |
+| current | 否 | 页码，默认 1 |
+| size | 否 | 每页条数，默认 10，最大 100 |
+
+响应 `data.records` 中每条记录包含：
+
+```json
+{
+  "id": 1,
+  "empId": 1,
+  "empNo": "E001",
+  "empName": "张三",
+  "deptId": 1,
+  "deptName": "技术部",
+  "salaryMonth": "2024-09",
+  "basePay": 8000.00,
+  "bonus": 1000.00,
+  "deduction": 500.00,
+  "actualPay": 8500.00,
+  "createTime": "2026-10-28 21:17:16"
+}
+```
+
+### 6.2 部门月度薪资汇总
+
+`GET /api/salaries/report/department?month=2024-09`
+
+响应 `data` 为数组：
+
+```json
+[
+  {
+    "deptId": 1,
+    "deptName": "技术部",
+    "salaryMonth": "2024-09",
+    "empCount": 2,
+    "totalBase": 17000.00,
+    "totalBonus": 3000.00,
+    "totalDeduction": 700.00,
+    "totalActual": 19300.00
+  }
+]
+```
+
+没有薪资记录的月份返回空数组。
+
+### 6.3 生成月度工资
+
+`POST /api/salaries/generate?month=2024-10`
+
+规则：
+
+- 只处理 `status=1` 的在职员工。
+- 以员工在该月之前最近一条薪资的 `base_pay` 作为本月基本工资。
+- 奖金、扣款默认为 0；`actual_pay = base_pay`。
+- 没有历史薪资的员工计入 `skipped`，不会生成 0 元工资。
+- 同一月份重复生成返回业务码 400。
+- 生成过程使用事务；唯一约束 `uk_emp_month(emp_id, salary_month)` 防止并发重复。
+
+成功响应：
+
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "month": "2024-10",
+    "generated": 3,
+    "skipped": 0,
+    "totalActual": 24000.00
+  }
+}
+```
+
+## 7. 联调约定
 
 1. 前端 `.env.development` 里配置 `VITE_API_BASE_URL=http://localhost:8080`，或直接用 Vite 代理 `/api` → `http://localhost:8080`。
 2. 员工与部门 Controller 已加本地 CORS，允许 `localhost` / `127.0.0.1` 任意端口访问；如果浏览器仍报 CORS，先检查后端是否重启。
