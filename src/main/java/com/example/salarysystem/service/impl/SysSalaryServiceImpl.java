@@ -63,7 +63,12 @@ public class SysSalaryServiceImpl extends ServiceImpl<SysSalaryMapper, SysSalary
         validateEmployee(request.getEmpId());
         SysSalary salary = toEntity(request);
         validateAndFill(salary, null);
-        baseMapper.insert(salary);
+        try {
+            baseMapper.insert(salary);
+        } catch (DuplicateKeyException exception) {
+            throw new BusinessException(400,
+                    "该员工 " + salary.getSalaryMonth() + " 月已存在薪资记录");
+        }
         return salary;
     }
 
@@ -78,7 +83,12 @@ public class SysSalaryServiceImpl extends ServiceImpl<SysSalaryMapper, SysSalary
         SysSalary salary = toEntity(request);
         salary.setId(id);
         validateAndFill(salary, id);
-        baseMapper.updateById(salary);
+        try {
+            baseMapper.updateById(salary);
+        } catch (DuplicateKeyException exception) {
+            throw new BusinessException(400,
+                    "该员工 " + salary.getSalaryMonth() + " 月已存在薪资记录");
+        }
         return salary;
     }
 
