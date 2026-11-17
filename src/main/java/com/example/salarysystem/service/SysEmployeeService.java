@@ -3,6 +3,7 @@ package com.example.salarysystem.service;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.IService;
 import com.example.salarysystem.entity.SysEmployee;
+import com.example.salarysystem.dto.EmployeeSaveDTO;
 import com.example.salarysystem.vo.EmployeeVO;
 
 import java.util.List;
@@ -17,5 +18,12 @@ public interface SysEmployeeService extends IService<SysEmployee> {
     List<EmployeeVO> listAll();
 
     /** 分页查询，keyword 支持姓名或工号模糊搜索 */
-    Page<EmployeeVO> pageEmployees(long current, long size, String keyword);
+    Page<EmployeeVO> pageEmployees(long current, long size, String keyword, Integer deptId, String deptName);
+
+    SysEmployee createEmployee(EmployeeSaveDTO request);
+
+    SysEmployee updateEmployee(Integer id, EmployeeSaveDTO request);
+
+    /** 有薪资记录时离职，否则物理删除；返回离职/删除结果供前端提示。 */
+    String deleteEmployee(Integer id);
 }

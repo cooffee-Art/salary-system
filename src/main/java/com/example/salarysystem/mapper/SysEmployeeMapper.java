@@ -61,9 +61,23 @@ public interface SysEmployeeMapper extends BaseMapper<SysEmployee> {
                     AND (e.name LIKE CONCAT('%', #{keyword}, '%')
                          OR e.emp_no LIKE CONCAT('%', #{keyword}, '%'))
                 </if>
+                <if test="deptId != null">
+                    AND e.dept_id = #{deptId}
+                </if>
+                <if test="deptName != null and deptName != ''">
+                    AND d.dept_name LIKE CONCAT('%', #{deptName}, '%')
+                </if>
             </where>
             ORDER BY e.id
             </script>
             """)
-    Page<EmployeeVO> selectEmployeePage(Page<EmployeeVO> page, @Param("keyword") String keyword);
+    Page<EmployeeVO> selectEmployeePage(Page<EmployeeVO> page, @Param("keyword") String keyword,
+                                       @Param("deptId") Integer deptId, @Param("deptName") String deptName);
+
+    /** 锁住员工行，避免删除检查期间新增薪资记录产生竞态；必须在事务内调用。 */
+    @Select("SELECT * FROM sys_employee WHERE id = #{id} FOR UPDATE")
+    SysEmployee selectForUpdate(@Param("id") Integer id);
+
+    @Select("SELECT COUNT(*) FROM sys_salary WHERE emp_id = #{id}")
+    long countSalaryRecords(@Param("id") Integer id);
 }

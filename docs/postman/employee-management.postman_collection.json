@@ -1,0 +1,415 @@
+{
+  "info": {
+    "name": "员工管理接口联调",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "先初始化本地测试库并启动后端，按顺序运行。只修改本集合创建的员工；离职保留薪资场景由自动集成测试覆盖。"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "employeeId",
+      "value": ""
+    },
+    {
+      "key": "empNo",
+      "value": ""
+    },
+    {
+      "key": "deptId",
+      "value": "1"
+    },
+    {
+      "key": "deptName",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 部门下拉",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/departments"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('存在测试部门', () => pm.expect(result.data.length).to.be.above(0));",
+              "if (result.data.length) { pm.collectionVariables.set('deptId', result.data[0].id); pm.collectionVariables.set('deptName', result.data[0].deptName); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 新增员工",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/employees",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"empNo\": \"{{empNo}}\",\n  \"name\": \"接口测试员工\",\n  \"gender\": \"男\",\n  \"phone\": \"13800138000\",\n  \"deptId\": \"{{deptId}}\",\n  \"hireDate\": \"2024-05-10\",\n  \"status\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('empNo', 'T' + Date.now());"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('返回员工ID', () => pm.expect(result.data.id).to.be.a('number'));",
+              "pm.collectionVariables.set('employeeId', result.data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 员工详情",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees/{{employeeId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('工号一致', () => pm.expect(result.data.empNo).to.eql(pm.collectionVariables.get('empNo')));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 员工列表",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('包含新员工', () => pm.expect(result.data.some(e => e.id === Number(pm.collectionVariables.get('employeeId')))).to.eql(true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 姓名工号与部门组合分页",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees/page?current=1&size=10&keyword={{empNo}}&deptId={{deptId}}&deptName={{deptName}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('组合查询唯一命中', () => pm.expect(result.data.total).to.eql(1));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 重复工号返回400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/employees",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"empNo\": \"{{empNo}}\",\n  \"name\": \"重复员工\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 400', () => pm.expect(result.code).to.eql(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 非法手机号返回400",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/employees",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"empNo\": \"{{empNo}}X\",\n  \"name\": \"非法员工\",\n  \"phone\": \"123\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 400', () => pm.expect(result.code).to.eql(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 分页边界兜底",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees/page?current=0&size=1000&keyword={{empNo}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('页码和条数兜底', () => { pm.expect(result.data.current).to.eql(1); pm.expect(result.data.size).to.eql(100); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 修改员工并清空可选字段",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/employees/{{employeeId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"empNo\": \"{{empNo}}\",\n  \"name\": \"接口测试已修改\",\n  \"status\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('可选字段已清空', () => { pm.expect(result.data.deptId).to.eql(null); pm.expect(result.data.phone).to.eql(null); pm.expect(result.data.hireDate).to.eql(null); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 删除本集合创建的无薪资员工",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees/{{employeeId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('物理删除成功', () => pm.expect(result.data).to.eql('员工已删除'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 删除后查询返回404",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees/{{employeeId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 404', () => pm.expect(result.code).to.eql(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 修改不存在员工返回404",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/employees/{{employeeId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"empNo\": \"{{empNo}}\",\n  \"name\": \"不存在\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 404', () => pm.expect(result.code).to.eql(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 非法ID返回400",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees/abc"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 400', () => pm.expect(result.code).to.eql(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 SQL注入字符串作为普通搜索条件",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/employees/page?keyword=%27%20OR%201%3D1%20--"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const result = pm.response.json();",
+              "pm.test('业务码 200', () => pm.expect(result.code).to.eql(200));",
+              "pm.test('无注入命中', () => pm.expect(result.data.total).to.eql(0));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
