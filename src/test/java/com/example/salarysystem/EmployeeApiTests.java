@@ -177,6 +177,14 @@ class EmployeeApiTests {
                 .andExpect(jsonPath("$.data.total").value(0));
     }
 
+    @Test
+    void legacyEmployeesPathStillWorks() throws Exception {
+        mvc.perform(get("/employees"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data", hasSize(3)));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"/api/employees/abc", "/api/employees/0", "/api/employees/-1",
             "/api/employees/page?current=abc", "/api/employees/page?deptId=-1"})

@@ -27,6 +27,7 @@ import java.util.List;
  * 员工接口。
  *
  * GET /api/employees          全部员工（带部门名）
+ * GET /employees              兼容旧地址（新代码请使用 /api/employees）
  * GET /api/employees/page     分页 + 关键字搜索
  * GET /api/employees/{id}     员工详情
  *
@@ -34,7 +35,7 @@ import java.util.List;
  * 生产环境应改成网关或全局 CORS 配置，并收紧允许的来源。
  */
 @RestController
-@RequestMapping("/api/employees")
+@RequestMapping({"/api/employees", "/employees"})
 @CrossOrigin(originPatterns = {"http://localhost:*", "http://127.0.0.1:*"}, maxAge = 3600)
 @RequiredArgsConstructor
 public class EmployeeController {

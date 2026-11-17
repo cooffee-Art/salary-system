@@ -4,6 +4,8 @@
 >
 > 后端地址：`http://localhost:8080`
 > 前端开发地址：`http://localhost:5173`
+>
+> 员工接口的规范地址是 `/api/employees`；旧地址 `/employees` 仍然兼容，但新代码请统一使用带 `/api` 的地址。
 
 ## 1. 统一返回结构
 
