@@ -299,18 +299,44 @@ Authorization: Bearer <token>
 
 ## 6. 薪资接口
 
-### 6.1 薪资分页
+### 6.1 薪资字段字典
 
-`GET /api/salaries/page?month=2024-09&keyword=张&current=1&size=10`
+| 字段 | 类型 | 是否必填 | 说明 |
+| --- | --- | --- | --- |
+| id | int | 否 | 主键，新增时不传 |
+| empId | int | 是 | 员工 ID，必须存在 |
+| empNo | string | 否 | 员工工号，连表返回 |
+| empName | string | 否 | 员工姓名，连表返回 |
+| deptId | int | 否 | 部门 ID，连表返回 |
+| deptName | string | 否 | 部门名称，连表返回 |
+| salaryMonth | string | 是 | 薪资月份，`yyyy-MM`，如 2024-09 |
+| basePay | decimal | 是 | 基本工资，≥ 0 |
+| bonus | decimal | 否 | 奖金，≥ 0，缺省 0 |
+| deduction | decimal | 否 | 扣款，≥ 0，缺省 0 |
+| actualPay | decimal | 否 | 实发工资，后端重算，前端不传 |
+| createTime | string | 否 | 创建时间，`yyyy-MM-dd HH:mm:ss` |
+
+### 6.2 薪资列表
+
+`GET /api/salaries?salaryMonth=2024-09&empId=1&keyword=张`
+
+- `salaryMonth` 与 `month` 等价，二选一即可；不传查全部月份。
+- `empId` 按员工筛选；`keyword` 按姓名/工号模糊搜索。
+- `data` 为数组，元素包含员工、部门、金额字段。
+
+### 6.3 薪资分页
+
+`GET /api/salaries/page?current=1&size=10&salaryMonth=2024-09&empId=1&keyword=张`
 
 | 参数 | 必填 | 说明 |
 | --- | --- | --- |
-| month | 否 | `yyyy-MM`，不传查全部月份 |
-| keyword | 否 | 员工姓名或工号模糊搜索 |
-| current | 否 | 页码，默认 1 |
+| current | 否 | 页码，默认 1，小于 1 按 1 |
 | size | 否 | 每页条数，默认 10，最大 100 |
+| salaryMonth / month | 否 | `yyyy-MM`，不传查全部 |
+| empId | 否 | 员工 ID |
+| keyword | 否 | 姓名或工号模糊搜索 |
 
-响应 `data.records` 中每条记录包含：
+响应 `data.records` 中每条记录：
 
 ```json
 {
@@ -329,7 +355,54 @@ Authorization: Bearer <token>
 }
 ```
 
-### 6.2 部门月度薪资汇总
+### 6.4 薪资详情
+
+`GET /api/salaries/{id}`
+
+不存在返回：
+
+```json
+{"code":404,"message":"薪资记录不存在","data":null}
+```
+
+### 6.5 新增薪资
+
+`POST /api/salaries`
+
+```json
+{
+  "empId": 1,
+  "salaryMonth": "2024-10",
+  "basePay": 6000.00,
+  "bonus": 100.00,
+  "deduction": 100.00
+}
+```
+
+校验规则：
+
+- `empId` 必填且员工必须存在。
+- `salaryMonth` 必填，格式 `yyyy-MM`。
+- `basePay` 必填且 ≥ 0；`bonus`、`deduction` 可空，缺省 0，均 ≥ 0。
+- 扣款不能大于基本工资与奖金之和。
+- 同一员工同一月份只能有一条记录。
+- `actualPay = basePay + bonus - deduction`，由后端重算，前端传了也不入库。
+
+成功返回 `code=200`，`data` 为新增后的薪资记录。
+
+### 6.6 修改薪资
+
+`PUT /api/salaries/{id}`
+
+请求体同新增，采用完整替换；不存在返回 404；同员工同月唯一校验会排除自身。
+
+### 6.7 删除薪资
+
+`DELETE /api/salaries/{id}`
+
+不存在返回 404；成功返回 `code=200`，`data=null`。
+
+### 6.8 部门月度薪资汇总
 
 `GET /api/salaries/report/department?month=2024-09`
 
@@ -350,9 +423,9 @@ Authorization: Bearer <token>
 ]
 ```
 
-没有薪资记录的月份返回空数组。
+没有薪资记录的月份返回空数组；没有部门的员工不计入报表。
 
-### 6.3 生成月度工资
+### 6.9 生成月度工资
 
 `POST /api/salaries/generate?month=2024-10`
 
@@ -379,6 +452,13 @@ Authorization: Bearer <token>
   }
 }
 ```
+
+### 6.10 薪资错误码
+
+- 400：员工不存在、月份格式错误、金额为负、扣款超额、同员工同月重复、请求体非法。
+- 404：薪资记录不存在。
+- 401：未登录或 Token 无效。
+- 业务失败沿用 HTTP 200 + body.code 契约。
 
 ## 7. 联调约定
 

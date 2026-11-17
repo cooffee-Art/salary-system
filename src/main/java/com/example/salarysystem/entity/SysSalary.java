@@ -3,6 +3,7 @@ package com.example.salarysystem.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -33,7 +34,9 @@ public class SysSalary implements Serializable {
 
     private BigDecimal deduction;
 
+    /** 实发工资 = 基本工资 + 奖金 - 扣款，由后端计算 */
     private BigDecimal actualPay;
 
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
 }

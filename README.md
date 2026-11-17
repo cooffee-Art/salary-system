@@ -27,6 +27,8 @@
 - 部门下拉查询（id、deptName）
 - JWT 登录、无状态鉴权、统一 401/403 返回
 - 薪资分页查询（员工 + 部门 + 薪资三表连查）
+- 薪资新增/修改/删除/详情，实发工资由后端重算
+- 薪资金额校验：非负、扣款不能大于收入、同员工同月唯一
 - 部门月度薪资汇总报表
 - 月度工资批量生成（事务 + 唯一约束幂等）
 - 统一返回结构 `Result<T>` / `PageResult<T>` 与全局异常处理
@@ -55,7 +57,10 @@ salary-system/
 ├── docs/
 │   ├── init.sql                # 建库、建表、测试数据
 │   ├── api.md                  # 前后端接口契约
+│   ├── db-review.md            # 数据库评审
+│   ├── backlog-b-c.md          # B/C 工作清单
 │   ├── team-tasks.md           # 三名组员的任务书
+│   ├── test/                   # 测试用例与 Bug 清单
 │   └── roadmap.md              # 组长进阶路线
 ├── pom.xml
 └── README.md
@@ -149,7 +154,12 @@ npm run dev
 | PUT | `/api/employees/{id}` | 完整修改员工 | 已完成 |
 | DELETE | `/api/employees/{id}` | 删除/离职 | 已完成 |
 | GET | `/api/departments` | 部门下拉 | 已完成 |
+| GET | `/api/salaries` | 薪资列表（月份/员工/关键字） | 已完成 |
 | GET | `/api/salaries/page` | 薪资分页（三表连查） | 已完成 |
+| GET | `/api/salaries/{id}` | 薪资详情 | 已完成 |
+| POST | `/api/salaries` | 新增薪资，后端重算实发 | 已完成 |
+| PUT | `/api/salaries/{id}` | 修改薪资 | 已完成 |
+| DELETE | `/api/salaries/{id}` | 删除薪资 | 已完成 |
 | GET | `/api/salaries/report/department` | 部门月度汇总 | 已完成 |
 | POST | `/api/salaries/generate` | 批量生成月度工资 | 已完成 |
 
@@ -183,6 +193,9 @@ refactor(common): 抽取 PageResult
 
 - [接口契约](docs/api.md)
 - [数据库初始化脚本](docs/init.sql)
+- [数据库评审报告](docs/db-review.md)
+- [测试用例](docs/test/cases.md)
+- [Bug 清单](docs/test/bugs.md)
 - [组员任务书](docs/team-tasks.md)
 - [B/C 当前迭代工作清单](docs/backlog-b-c.md)
 - [员工模块开发、测试与交接说明](docs/employee-development.md)
