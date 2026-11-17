@@ -463,7 +463,7 @@ Authorization: Bearer <token>
 ## 7. 联调约定
 
 1. 前端 `.env.development` 里配置 `VITE_API_BASE_URL=http://localhost:8080`，或直接用 Vite 代理 `/api` → `http://localhost:8080`。
-2. 员工与部门 Controller 已加本地 CORS，允许 `localhost` / `127.0.0.1` 任意端口访问；如果浏览器仍报 CORS，先检查后端是否重启。
+2. 员工、部门、登录、薪资 Controller 均已加本地 CORS，允许 `localhost` / `127.0.0.1` 任意端口访问；如果浏览器仍报 CORS，先检查后端是否重启。
 3. 日期统一传 `yyyy-MM-dd` 字符串，不要传时间戳。
 4. 金额统一用 `decimal` / `BigDecimal`，前端不要用浮点数做加减。
 5. 接口有变动，先改本文件，再改代码，最后在群里通知。
