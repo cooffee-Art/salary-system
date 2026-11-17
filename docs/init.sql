@@ -71,6 +71,7 @@ CREATE TABLE `sys_salary` (
     `actual_pay`   DECIMAL(10,2) NOT NULL COMMENT '实发工资',
     `create_time`  DATETIME      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_emp_month` (`emp_id`, `salary_month`),
     KEY `fk_salary_emp` (`emp_id`),
     CONSTRAINT `fk_salary_emp` FOREIGN KEY (`emp_id`) REFERENCES `sys_employee` (`id`)
 ) ENGINE = InnoDB
@@ -109,9 +110,7 @@ SELECT '薪资', COUNT(*) FROM `sys_salary`;
 -- ------------------------------------------------------------
 -- 6. 建议的后续优化（先别急着执行，交给组员 C 评估）
 -- ------------------------------------------------------------
--- 同一员工、同一月份只允许一条薪资记录，防止重复发薪：
--- ALTER TABLE `sys_salary`
---     ADD UNIQUE KEY `uk_emp_month` (`emp_id`, `salary_month`);
+-- 同一员工、同一月份只允许一条薪资记录：已在建表语句中加入唯一键 uk_emp_month(emp_id, salary_month)。
 --
 -- 员工姓氏搜索、部门名称搜索的索引（数据量大时再加）：
 -- ALTER TABLE `sys_employee` ADD INDEX `idx_emp_name` (`name`);

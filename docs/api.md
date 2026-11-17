@@ -242,3 +242,82 @@ current 小于 1 时按 1 处理，size 限制在 1–100；超出最后一页�
 4. 金额统一用 `decimal` / `BigDecimal`，前端不要用浮点数做加减。
 5. 接口有变动，先改本文件，再改代码，最后在群里通知。
 6. 可导入 `docs/postman/employee-management.postman_collection.json` 进行员工 CRUD 联调；用法与验证结果见 `docs/employee-development.md`。
+
+## 6. 薪资接口（feature/salary-crud）
+
+### 6.1 薪资字段字典
+
+| 字段 | 类型 | 是否必填 | 说明 |
+| --- | --- | --- | --- |
+| id | int | 否 | 主键，新增时不传 |
+| empId | int | 是 | 员工 ID，必须存在 |
+| empNo | string | 否 | 员工工号，列表 / 详情连表返回 |
+| empName | string | 否 | 员工姓名，列表 / 详情连表返回 |
+| deptName | string | 否 | 部门名称，列表 / 详情连表返回 |
+| salaryMonth | string | 是 | 薪资月份，`yyyy-MM`，如 2024-09 |
+| basePay | decimal | 是 | 基本工资，≥ 0 |
+| bonus | decimal | 否 | 奖金，≥ 0，缺省 0 |
+| deduction | decimal | 否 | 扣款，≥ 0，缺省 0 |
+| actualPay | decimal | 否 | 实发工资，后端重算，前端不传 |
+| createTime | string | 否 | 创建时间，`yyyy-MM-dd HH:mm:ss` |
+
+### 6.2 薪资列表
+
+`GET /api/salaries?salaryMonth=2024-09&empId=1`
+
+- `salaryMonth`、`empId` 均为可选筛选，AND 组合；空白月份等同不筛选。
+- 响应 `data` 为数组，元素含 `empNo`、`empName`、`deptName`。
+
+### 6.3 薪资分页
+
+`GET /api/salaries/page?current=1&size=10&salaryMonth=2024-09&empId=1`
+
+分页结构同员工模块 `PageResult<T>`；current 小于 1 按 1 处理，size 限制在 1–100。
+
+### 6.4 薪资详情
+
+`GET /api/salaries/{id}`
+
+不存在返回业务码 404：`{"code":404,"message":"薪资记录不存在","data":null}`。
+
+### 6.5 新增薪资
+
+`POST /api/salaries`
+
+请求体：
+
+```json
+{
+  "empId": 1,
+  "salaryMonth": "2024-10",
+  "basePay": 6000.00,
+  "bonus": 100.00,
+  "deduction": 100.00
+}
+```
+
+校验约定：
+
+- `empId` 必填且为正整数，员工必须存在；`salaryMonth` 必填且符合 `yyyy-MM`。
+- `basePay` 必填且 ≥ 0；`bonus`、`deduction` 可空，缺省 0，均 ≥ 0。
+- 扣款不能大于基本工资与奖金之和（实发不允许为负）。
+- 同一员工同一月份只能有一条薪资记录。
+- `actualPay = basePay + bonus - deduction`，由后端重算并保留两位小数；前端传入的 `actualPay` 不入库。
+
+### 6.6 修改薪资
+
+`PUT /api/salaries/{id}`
+
+请求体同新增，完整替换；不存在返回 404；修改时的唯一校验排除自身记录。
+
+### 6.7 删除薪资
+
+`DELETE /api/salaries/{id}`
+
+不存在返回 404；删除成功返回 `code=200`，`data` 为 null。
+
+### 6.8 薪资错误码
+
+- 400：员工不存在、月份格式错误、金额为负、扣款超额、同员工同月重复、请求体非法。
+- 404：薪资记录不存在。
+- 业务失败沿用 HTTP 200 + body.code 契约。
