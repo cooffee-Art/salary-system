@@ -33,3 +33,9 @@ mybatis-plus:
 logging:
   level:
     com.example.salarysystem.mapper: debug
+
+app:
+  jwt:
+    # 生产环境必须用环境变量覆盖；至少 32 字节
+    secret: "${JWT_SECRET:salary-system-dev-secret-key-change-me-2026}"
+    expiration-seconds: 7200

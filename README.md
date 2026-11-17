@@ -8,10 +8,11 @@
 | --- | --- | --- |
 | 后端 | Spring Boot | 4.1.2 |
 | 后端 | MyBatis-Plus | 3.5.18（boot4 starter） |
+| 后端 | Spring Security + JWT | Security 7 + jjwt 0.12.6 |
 | 后端 | MySQL | 8.0 |
 | 后端 | JDK | 21（本机用 25 也能编译运行） |
-| 前端 | Vue 3 + Vite | 待组员 B 搭建 |
-| 前端 | Element Plus + Axios | 待组员 B 搭建 |
+| 前端 | Vue 3 + Vite | 登录页已完成 |
+| 前端 | Element Plus + Axios | 已接入 |
 | 工具 | IDEA / HeidiSQL / Git / GitHub / Gitee | — |
 
 > 版本注意：Spring Boot 4 的 Web starter 叫 `spring-boot-starter-webmvc`；MyBatis-Plus 3.5.18 的 `IService` / `ServiceImpl` 包名是 `com.baomidou.mybatisplus.spring.service`，旧教程里的 `...extension.service` 会编译不过。
@@ -24,7 +25,11 @@
 - 员工新增、完整修改、删除/离职（保留薪资历史）
 - 员工参数校验、工号唯一检查、部门 ID / 名称组合筛选
 - 部门下拉查询（id、deptName）
-- 统一返回结构 `Result<T>` / `PageResult<T>`
+- JWT 登录、无状态鉴权、统一 401/403 返回
+- 薪资分页查询（员工 + 部门 + 薪资三表连查）
+- 部门月度薪资汇总报表
+- 月度工资批量生成（事务 + 唯一约束幂等）
+- 统一返回结构 `Result<T>` / `PageResult<T>` 与全局异常处理
 - MyBatis-Plus 分页插件、驼峰映射、SQL 控制台日志
 - 本地联调 CORS
 - 数据库初始化脚本、接口契约、团队任务书
@@ -35,16 +40,18 @@
 salary-system/
 ├── src/main/java/com/example/salarysystem/
 │   ├── SalarySystemApplication.java
-│   ├── common/                 # Result、PageResult
-│   ├── config/                 # MyBatis-Plus 配置
-│   ├── controller/             # 员工、部门下拉及模块异常处理
-│   ├── dto/                    # 员工新增/修改参数校验
-│   ├── entity/                 # SysEmployee、SysDepartment
-│   ├── mapper/                 # 员工、部门数据库访问
+│   ├── common/                 # Result、PageResult、全局异常
+│   ├── config/                 # MyBatis-Plus、Security 配置
+│   ├── controller/             # 员工、部门、登录、薪资接口
+│   ├── dto/                    # 员工保存、登录参数
+│   ├── entity/                 # SysEmployee、SysDepartment、SysSalary、SysUser
+│   ├── mapper/                 # 各模块数据库访问
+│   ├── security/               # JWT 签发、解析、过滤器
 │   ├── service/                # 接口 + impl
-│   └── vo/                     # EmployeeVO
+│   └── vo/                     # 列表/报表/登录返回对象
 ├── src/main/resources/
 │   └── application.yaml
+├── frontend/                   # Vue 3 + Vite 前端
 ├── docs/
 │   ├── init.sql                # 建库、建表、测试数据
 │   ├── api.md                  # 前后端接口契约
@@ -58,7 +65,7 @@ salary-system/
 
 ### 1. 初始化数据库
 
-> `docs/init.sql` 会先删除三张表再重建，只在本地测试库执行。
+> `docs/init.sql` 会先删除四张表再重建，只在本地测试库执行。
 
 ```bash
 mysql -uroot -p --default-character-set=utf8mb4 < docs/init.sql
@@ -90,12 +97,30 @@ macOS / Linux：
 ./mvnw spring-boot:run
 ```
 
-启动成功后访问：
+启动成功后，先登录拿 Token（默认账号 `admin / admin123`，仅本地练习用）：
+
+```bash
+curl -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"admin123"}'
+```
+
+然后把返回的 `data.token` 放到请求头：
+
+```text
+Authorization: Bearer <token>
+```
+
+再访问：
 
 ```text
 http://localhost:8080/api/employees
 http://localhost:8080/api/employees/page?current=1&size=10&keyword=张
+http://localhost:8080/api/salaries/page?month=2024-09
+http://localhost:8080/api/salaries/report/department?month=2024-09
 ```
+
+> 除 `/api/auth/login` 外，所有 `/api/**` 接口都需要 Token。
 
 ### 4. 启动前端（组员 B 完成后）
 
@@ -107,12 +132,16 @@ npm run dev
 
 默认地址 `http://localhost:5173`。
 
+> 当前前端登录仍走 Mock；接真实后端时，关闭 `vite-plugin-mock`、启用 `/api` proxy，并调用 `POST /api/auth/login` 获取真实 Token。后端已提供该接口。
+
 ## 接口
 
 完整字段、请求/响应示例、错误码见 [docs/api.md](docs/api.md)。
 
 | 方法 | 路径 | 说明 | 状态 |
 | --- | --- | --- | --- |
+| POST | `/api/auth/login` | 登录，返回 JWT | 已完成 |
+| GET | `/api/auth/me` | 当前登录人 | 已完成 |
 | GET | `/api/employees` | 全部员工（带部门名） | 已完成 |
 | GET | `/api/employees/page` | 分页 + 关键字搜索 | 已完成 |
 | GET | `/api/employees/{id}` | 员工详情 | 已完成 |
@@ -120,6 +149,9 @@ npm run dev
 | PUT | `/api/employees/{id}` | 完整修改员工 | 已完成 |
 | DELETE | `/api/employees/{id}` | 删除/离职 | 已完成 |
 | GET | `/api/departments` | 部门下拉 | 已完成 |
+| GET | `/api/salaries/page` | 薪资分页（三表连查） | 已完成 |
+| GET | `/api/salaries/report/department` | 部门月度汇总 | 已完成 |
+| POST | `/api/salaries/generate` | 批量生成月度工资 | 已完成 |
 
 ## 分支与提交规范
 

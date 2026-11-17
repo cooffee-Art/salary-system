@@ -3,14 +3,14 @@
 -- 数据库：salary_db
 -- 字符集：utf8mb4
 --
--- ⚠️ 警告：本脚本会 DROP 三张表后重建，仅供首次初始化或重置测试环境。
+-- ⚠️ 警告：本脚本会 DROP 四张表后重建，仅供首次初始化或重置测试环境。
 --    如果库里已有正式数据，请先备份，不要直接执行！
 --
 -- 使用方式（HeidiSQL）：
 --   1. 连接到本地 MySQL 8.0；
 --   2. 打开本文件；
 --   3. 确认当前库不是生产库后，点击“执行”；
---   4. 刷新左侧列表，应看到 3 张表和测试数据。
+--   4. 刷新左侧列表，应看到 4 张表和测试数据。
 -- ============================================================
 
 SET NAMES utf8mb4;
@@ -25,6 +25,7 @@ USE `salary_db`;
 DROP TABLE IF EXISTS `sys_salary`;
 DROP TABLE IF EXISTS `sys_employee`;
 DROP TABLE IF EXISTS `sys_department`;
+DROP TABLE IF EXISTS `sys_user`;
 
 -- ------------------------------------------------------------
 -- 1. 部门表
@@ -37,6 +38,22 @@ CREATE TABLE `sys_department` (
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_general_ci COMMENT = '部门表';
+
+-- ------------------------------------------------------------
+-- 1.1 系统用户表
+-- ------------------------------------------------------------
+CREATE TABLE `sys_user` (
+    `id`          INT          NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+    `username`    VARCHAR(50)  NOT NULL COMMENT '登录名',
+    `password`    VARCHAR(100) NOT NULL COMMENT 'BCrypt 密码哈希',
+    `role`        VARCHAR(20)  NOT NULL DEFAULT 'EMPLOYEE' COMMENT 'ADMIN/HR/EMPLOYEE',
+    `status`      TINYINT      DEFAULT 1 COMMENT '1启用,0停用',
+    `create_time` DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_username` (`username`)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_general_ci COMMENT = '系统用户表';
 
 -- ------------------------------------------------------------
 -- 2. 员工表
@@ -71,6 +88,8 @@ CREATE TABLE `sys_salary` (
     `actual_pay`   DECIMAL(10,2) NOT NULL COMMENT '实发工资',
     `create_time`  DATETIME      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_emp_month` (`emp_id`, `salary_month`),
+    KEY `idx_salary_month` (`salary_month`),
     KEY `fk_salary_emp` (`emp_id`),
     CONSTRAINT `fk_salary_emp` FOREIGN KEY (`emp_id`) REFERENCES `sys_employee` (`id`)
 ) ENGINE = InnoDB
@@ -84,6 +103,10 @@ INSERT INTO `sys_department` (`id`, `dept_name`) VALUES
     (1, '技术部'),
     (2, '财务部'),
     (3, '人事部');
+
+-- 默认管理员：admin / admin123（仅用于本地练习，上线必须改密码）
+INSERT INTO `sys_user` (`username`, `password`, `role`, `status`) VALUES
+    ('admin', '$2a$10$PW49OfHKWY/IReCe0fFbIOnGGYLPqpEQelHNQ7HIQ4/Pm9wbQywb.', 'ADMIN', 1);
 
 INSERT INTO `sys_employee` (`id`, `emp_no`, `name`, `gender`, `phone`, `dept_id`, `hire_date`, `status`) VALUES
     (1, 'E001', '张三', '男', '13800138000', 1, '2023-01-15', 1),
@@ -104,15 +127,18 @@ SELECT '部门' AS 表名, COUNT(*) AS 记录数 FROM `sys_department`
 UNION ALL
 SELECT '员工', COUNT(*) FROM `sys_employee`
 UNION ALL
-SELECT '薪资', COUNT(*) FROM `sys_salary`;
+SELECT '薪资', COUNT(*) FROM `sys_salary`
+UNION ALL
+SELECT '用户', COUNT(*) FROM `sys_user`;
 
 -- ------------------------------------------------------------
--- 6. 建议的后续优化（先别急着执行，交给组员 C 评估）
+-- 6. 已启用的约束与索引
 -- ------------------------------------------------------------
 -- 同一员工、同一月份只允许一条薪资记录，防止重复发薪：
--- ALTER TABLE `sys_salary`
---     ADD UNIQUE KEY `uk_emp_month` (`emp_id`, `salary_month`);
+--     uk_emp_month (emp_id, salary_month) 已在上面的建表语句中创建
+-- 报表按月份筛选的索引：
+--     idx_salary_month (salary_month) 已创建
 --
--- 员工姓氏搜索、部门名称搜索的索引（数据量大时再加）：
+-- 数据量大时再考虑：
 -- ALTER TABLE `sys_employee` ADD INDEX `idx_emp_name` (`name`);
 -- ALTER TABLE `sys_department` ADD INDEX `idx_dept_name` (`dept_name`);
