@@ -2,6 +2,165 @@
 
 > 4 人学生团队的练手项目：把课堂上的 Spring Boot / MyBatis-Plus / Vue 串成一个能演示、能讲清楚的小系统。
 
+## Demo Run Guide / 演示运行指南
+
+> Teacher/grader: follow this section to run the project.
+> 老师/验收人：按这一节操作即可运行项目。
+
+### Step 1 — Open the Project / 打开项目
+
+1. Open IntelliJ IDEA.
+2. `File` → `Open`, select the `salary-system` folder (the folder containing `pom.xml`).
+3. Click `OK` → `Open as Project`, then wait for Maven import and indexing.
+4. If IDEA reports `程序包 org.springframework... 不存在`, right-click `pom.xml` → `Maven` → `Reload project`.
+
+> 不需要手动把 JDBC 驱动 JAR 放进 `lib/`；Maven 会自动下载依赖。
+
+### Step 2 — Prerequisites / 环境要求
+
+| Software | Required version |
+| --- | --- |
+| JDK | 21+（JDK 25 works） |
+| MySQL | 8.0 |
+| Node.js | 18+（only for frontend） |
+| IntelliJ IDEA | 2023+ |
+| Maven | Use the included `mvnw` wrapper |
+
+MySQL must be running before starting the backend.
+启动后端前请确认 MySQL 已启动。
+
+### Step 3 — Set Up the Database / 初始化数据库
+
+1. Open MySQL Workbench / HeidiSQL and connect to local MySQL.
+2. Open `docs/init.sql`.
+3. Select the `salary_db` database and execute the script.
+
+Or use the command line:
+
+```bash
+mysql -uroot -p --default-character-set=utf8mb4 < docs/init.sql
+```
+
+After execution, these four tables should exist:
+
+```text
+sys_user
+sys_department
+sys_employee
+sys_salary
+```
+
+> Warning: `docs/init.sql` drops and recreates the four tables.
+>
+> 警告：脚本会删表重建，只用于本地练习/测试库，不要直接对正式数据执行。
+
+### Step 4 — Configure the Database Password / 配置数据库密码
+
+`src/main/resources/application.yaml` reads the password from an environment variable:
+
+```yaml
+password: "${MYSQL_PASSWORD:你的本机密码}"
+```
+
+Recommended: in IDEA, open `Run` → `Edit Configurations` → `Environment variables` and add:
+
+```text
+MYSQL_PASSWORD=你的MySQL密码
+```
+
+Or edit the `password` value directly. Do not commit a real password to a public repository.
+
+### Step 5 — Start the Backend / 启动后端
+
+1. Open `src/main/java/com/example/salarysystem/SalarySystemApplication.java`.
+2. Click the green Run button next to `SalarySystemApplication`.
+3. Or run in a terminal:
+
+```powershell
+.\mvnw.cmd spring-boot:run
+```
+
+Success looks like:
+
+```text
+Tomcat started on port 8080
+Started SalarySystemApplication
+```
+
+Backend URL: `http://localhost:8080`
+
+### Step 6 — Start the Frontend / 启动前端
+
+Open a second terminal:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173
+```
+
+> The frontend is a Vite project, not a static HTML page; it must be started with `npm run dev`.
+
+### Step 7 — Login / 登录
+
+Default administrator account:
+
+```text
+Username / 用户名: admin
+Password / 密码:   admin123
+```
+
+> Current frontend status: login page and a placeholder home page are available.
+>
+> Employee / salary management pages are still under development by teammate B.
+>
+> 当前前端只有登录页和登录成功占位页；员工/薪资页面仍在开发中。
+
+### Step 8 — Verify the Backend API / 验证后端接口
+
+The login endpoint is public; all other `/api/**` endpoints require a Bearer Token.
+
+PowerShell example:
+
+```powershell
+$login = Invoke-RestMethod "http://localhost:8080/api/auth/login" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body '{"username":"admin","password":"admin123"}'
+
+$token = $login.data.token
+
+Invoke-RestMethod "http://localhost:8080/api/employees" `
+  -Headers @{ Authorization = "Bearer $token" } |
+  ConvertTo-Json -Depth 5
+```
+
+Opening `http://localhost:8080/api/employees` directly in a browser returns 401 because the browser does not send the Authorization header. This is expected.
+浏览器直接打开业务接口会返回 401，这是正常的，需要先登录拿 Token。
+
+### Step 9 — Stop / 停止
+
+- Frontend: press `Ctrl + C` in the `npm run dev` terminal.
+- Backend: click the red Stop button in IDEA.
+
+### Common Issues / 常见问题
+
+| Problem | Solution |
+| --- | --- |
+| IDEA 报 `程序包 org.springframework.security.config 不存在` | Right-click `pom.xml` → `Maven` → `Reload project`; then `Build` → `Rebuild Project` |
+| `Access denied for user 'root'` | Check `MYSQL_PASSWORD` / `application.yaml` password |
+| `Unknown database 'salary_db'` | Run `docs/init.sql` first |
+| `Port 8080 already in use` | Stop the old backend process or change `server.port` |
+| `Port 5173 already in use` | Vite will choose 5174; use the URL printed in the terminal |
+| 401 on API request | Log in first and add `Authorization: Bearer <token>` |
+| Frontend login always succeeds | The frontend still uses Mock; B needs to disable Mock and enable the `/api` proxy |
+
 ## 技术栈
 
 | 层次 | 技术 | 版本 |
@@ -66,7 +225,7 @@ salary-system/
 └── README.md
 ```
 
-## 快速开始
+## 开发环境启动（详细）
 
 ### 1. 初始化数据库
 
@@ -189,7 +348,7 @@ refactor(common): 抽取 PageResult
 4. 不提交 `target/`、`.idea/`、`node_modules/`、真实数据库密码。
 5. 完成的定义：本地能跑 + 自测通过 + 文档更新 + PR 已提。
 
-## 常见问题
+## 常见问题（详细排查）
 
 ### IDEA 报 `程序包 org.springframework.security.config 不存在`
 
