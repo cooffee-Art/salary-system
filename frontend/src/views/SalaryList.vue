@@ -409,7 +409,7 @@ async function handleSubmit() {
 async function handleDelete(row) {
   try {
     await ElMessageBox.confirm(
-      `确定删除 ${row.name || ''} ${row.salaryMonth || ''} 的薪资记录吗？`,
+      `确定删除 ${row.empName || row.name || ''} ${row.salaryMonth || ''} 的薪资记录吗？`,
       '删除确认',
       { type: 'warning', confirmButtonText: '确定删除', cancelButtonText: '取消' },
     )

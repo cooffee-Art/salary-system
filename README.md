@@ -116,11 +116,11 @@ Username / 用户名: admin
 Password / 密码:   admin123
 ```
 
-> Current frontend status: login page and a placeholder home page are available.
+> Current frontend status: login, employee management, salary management and department report pages are available.
 >
-> Employee / salary management pages are still under development by teammate B.
+> The frontend now calls the real Spring Boot backend through the Vite `/api` proxy.
 >
-> 当前前端只有登录页和登录成功占位页；员工/薪资页面仍在开发中。
+> 当前前端已包含登录、员工管理、薪资管理、部门报表页面，并已接入真实后端。
 
 ### Step 8 — Verify the Backend API / 验证后端接口
 
@@ -159,7 +159,7 @@ Opening `http://localhost:8080/api/employees` directly in a browser returns 401 
 | `Port 8080 already in use` | Stop the old backend process or change `server.port` |
 | `Port 5173 already in use` | Vite will choose 5174; use the URL printed in the terminal |
 | 401 on API request | Log in first and add `Authorization: Bearer <token>` |
-| Frontend login always succeeds | The frontend still uses Mock; B needs to disable Mock and enable the `/api` proxy |
+| Frontend API 502 / cannot connect | Make sure the backend is running on 8080 and the Vite proxy targets `127.0.0.1:8080` |
 
 ## 技术栈
 
@@ -170,7 +170,7 @@ Opening `http://localhost:8080/api/employees` directly in a browser returns 401 
 | 后端 | Spring Security + JWT | Security 7 + jjwt 0.12.6 |
 | 后端 | MySQL | 8.0 |
 | 后端 | JDK | 21（本机用 25 也能编译运行） |
-| 前端 | Vue 3 + Vite | 登录页已完成 |
+| 前端 | Vue 3 + Vite | 员工/薪资/报表页面已完成 |
 | 前端 | Element Plus + Axios | 已接入 |
 | 工具 | IDEA / HeidiSQL / Git / GitHub / Gitee | — |
 
@@ -190,6 +190,8 @@ Opening `http://localhost:8080/api/employees` directly in a browser returns 401 
 - 薪资金额校验：非负、扣款不能大于收入、同员工同月唯一
 - 部门月度薪资汇总报表
 - 月度工资批量生成（事务 + 唯一约束幂等）
+- 前端登录、员工管理、薪资管理、部门报表页面
+- 前端 Vite `/api` 代理与真实后端联调
 - 统一返回结构 `Result<T>` / `PageResult<T>` 与全局异常处理
 - MyBatis-Plus 分页插件、驼峰映射、SQL 控制台日志
 - 本地联调 CORS
@@ -286,7 +288,7 @@ http://localhost:8080/api/salaries/report/department?month=2024-09
 
 > 除 `/api/auth/login` 外，所有 `/api/**` 接口都需要 Token。
 
-### 4. 启动前端（组员 B 完成后）
+### 4. 启动前端
 
 ```bash
 cd frontend
@@ -296,7 +298,7 @@ npm run dev
 
 默认地址 `http://localhost:5173`。
 
-> 当前前端登录仍走 Mock；接真实后端时，关闭 `vite-plugin-mock`、启用 `/api` proxy，并调用 `POST /api/auth/login` 获取真实 Token。后端已提供该接口。
+> 前端已通过 Vite `/api` proxy 接入真实后端；启动后使用 `admin / admin123` 登录。
 
 ## 接口
 

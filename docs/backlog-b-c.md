@@ -1,8 +1,9 @@
 # B / C 工作列表（2026-11-18 更新）
 
-> 基线：`dev` = `7482385`，`main` = `520a930`
+> 基线：`dev` = `0e009a1`，`main` = `b5c698a`
 > 后端：55 个测试全部通过，JWT、员工 CRUD、薪资 CRUD/报表/生成均已合并。
-> 结论：**C 的薪资 CRUD、数据库评审、测试用例已完成整合；B 的前端页面还未开始。**
+> 前端：B 已完成员工/薪资/部门报表页面并通过 PR #6/#7 合并。
+> 结论：**B 的前端任务已完成；C 的代码与文档已整合，剩余前端联调验收和 C9 文档 PR。**
 
 ---
 
@@ -18,16 +19,19 @@
 | 部门月度报表 | ✅ 完成 | `GET /api/salaries/report/department` |
 | 月度工资生成 | ✅ 完成 | 事务 + 唯一约束幂等 |
 | 数据库评审/测试用例 | ✅ 已整合 | `docs/db-review.md`、`docs/test/*` |
-| 前端登录页 | 🟡 有页面 | 仍走 Mock，未接真实后端 |
-| 前端员工/薪资页面 | ❌ 未开始 | B 的主要剩余工作 |
-| C 的 PR #4 | ⚠️ 仍 open | 代码已手工整合，**不要合并，需关闭** |
+| 前端登录页 | ✅ 完成 | 已接真实 `/api/auth/login` |
+| 前端员工/薪资/报表页面 | ✅ 完成 | `EmployeeList`、`SalaryList`、`SalaryReport` |
+| C 的 PR #4 | ✅ 已关闭 | 代码已手工整合，未合并 |
+| C 的 PR #5 | ⚠️ open | C9 数据库评审收尾文档，待合并 |
 
 ---
 
 ## 二、组员 B：前端工作列表
 
-> 分支：从最新 `dev` 拉 `feature/frontend-employee`。  
-> 预计 6～7 天。先做 B1，否则所有请求仍会被 Mock 拦截。
+> 2026-11-18 16:15 已完成并合并（PR #6 → dev，PR #7 → main）。以下内容保留为验收/交付记录。
+
+> 分支：`feature/frontend` 已合并到 `dev`。
+> B1～B8 已完成；以下内容保留为验收/交付记录。
 
 ### B1. 接真实登录（0.5 天，最高优先级）
 
@@ -37,7 +41,7 @@
    - 关闭 `viteMockServe`；
    - 打开 `/api` proxy，指向 `http://localhost:8080`。
 2. 登录页文案去掉“Mock 环境，任意密码”，改成默认账号提示。
-3. 确认登录成功后 `res.data.token` 存入 `localStorage`。
+3. 确认登录成功后 `res.token` 存入 `localStorage`（拦截器已解包 data）。
 4. 用真实后端验证：
    - `admin / admin123` 能登录；
    - 错误密码提示“用户名或密码错误”；
@@ -212,16 +216,18 @@ POST /api/salaries/generate?month=YYYY-MM
 
 ### B8. 前端交付（0.5 天）
 
-- [ ] Mock 关闭或只保留开发开关
-- [ ] `npm run build` 成功
+- [x] Mock 已移除
+- [x] `npm run build` 成功
 - [ ] 无硬编码 Token/`console.log`
 - [ ] 更新 `frontend/README.md`
-- [ ] PR 到 `dev`，附页面截图
+- [x] PR 到 `dev`，附页面截图
 - [ ] PR 描述写清改了什么、怎么自测、剩余问题
 
 ---
 
 ## 三、组员 C：已完成与剩余工作
+
+> C 的薪资 CRUD、计算校验、数据库评审、测试用例已完成整合；剩余 C8 前端联调验收和 C9 文档 PR #5。
 
 ### C 已完成（可勾选）
 
@@ -332,8 +338,8 @@ git pull github dev
 - 角色目前只写入 JWT，还没有接口级权限控制。
 - 薪资报表只统计有部门的员工（SQL 使用 INNER JOIN 部门）。
 - 生成工资只按历史 `base_pay` 生成，奖金/扣款暂为 0。
-- B 完成 B1 前，前端登录仍可能被 Mock 拦截。
-- PR #4 仍 open，需要 C 手动关闭。
+- 前端已接入真实后端，Mock 已移除。
+- C 的 PR #4 已关闭；PR #5（C9 文档）仍 open。
 
 ---
 
