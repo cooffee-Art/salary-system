@@ -1,8 +1,12 @@
 <template>
   <div class="login-page">
-    <el-card class="login-card" shadow="always">
+    <el-card class="login-card" shadow="never">
       <template #header>
-        <h1 class="login-title">员工管理系统</h1>
+        <div class="login-brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <h1 class="login-title">员工管理系统</h1>
+          <p class="login-subtitle">EMPLOYEE ADMIN SYSTEM</p>
+        </div>
       </template>
 
       <el-form
@@ -46,7 +50,10 @@
         </el-form-item>
       </el-form>
 
-      <p class="login-tip">当前为 Mock 环境，任意用户名 / 密码均可登录</p>
+      <div class="login-status">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>SECURE CHANNEL · ONLINE</span>
+      </div>
     </el-card>
   </div>
 </template>
@@ -77,11 +84,11 @@ const rules = {
  * POST /api/auth/login
  * request 的 baseURL 已是 '/api'，这里只需写 '/auth/login'。
  *
- * 注意：响应拦截器返回的是完整的 { code, data, message }，
- * 所以 token 位于 res.data.token（而不是 res.token）。
+ * 响应拦截器已经解包 { code, message, data }，所以 res 就是 data，
+ * token 直接取 res.token。
  */
 async function handleLogin() {
-  // 同步置位，先于任何 await：即使有多个触发源，也只会放行一次请求
+  // 同步置位，先于任何 await：即使有多个触发源，也只放行一次请求
   if (loading.value) return
   loading.value = true
 
@@ -99,15 +106,16 @@ async function handleLogin() {
       password: form.password,
     })
 
-    const token = res?.data?.token
+    const token = res?.token
     if (!token) {
       ElMessage.error('登录响应异常：未返回 token')
       return
     }
 
     localStorage.setItem('token', token)
+    localStorage.setItem('username', form.username.trim())
     ElMessage.success('登录成功')
-    router.push('/')
+    router.push('/employees')
   } catch {
     // 拦截器里已经 ElMessage.error 提示过了，这里不再重复弹窗
   } finally {
@@ -117,39 +125,142 @@ async function handleLogin() {
 </script>
 
 <style scoped>
+/* 背景交给全局 ParticleBackground，这里只保留布局与玻璃卡片 */
 .login-page {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100%;
   padding: 24px;
-  background: linear-gradient(135deg, #409eff 0%, #79bbff 45%, #d9ecff 100%);
+  background: transparent;
 }
 
+/* 玻璃拟态卡片：深色半透明 + 强模糊 + 霓虹描边 */
 .login-card {
+  position: relative;
+  z-index: 2;
   width: 400px;
   max-width: 100%;
-  border-radius: 8px;
+  background: rgba(6, 14, 26, 0.62);
+  border: 1px solid rgba(0, 240, 255, 0.5);
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 40px rgba(0, 240, 255, 0.05),
+    inset 0 1px 0 rgba(191, 252, 255, 0.12);
+  backdrop-filter: blur(22px) saturate(1.3);
+  -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  clip-path: polygon(
+    0 0,
+    calc(100% - 20px) 0,
+    100% 20px,
+    100% 100%,
+    20px 100%,
+    0 calc(100% - 20px)
+  );
+  filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.35));
+}
+
+/* 顶部霓虹线 */
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #00f0ff, transparent);
+  opacity: 0.9;
+}
+
+.login-card :deep(.el-card__header) {
+  padding: 28px 28px 10px;
+  border-bottom: none;
+  background: radial-gradient(
+    ellipse 80% 120% at 50% -30%,
+    rgba(0, 240, 255, 0.12),
+    transparent 70%
+  );
+}
+
+.login-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 6px;
+  border: 1px solid rgba(0, 240, 255, 0.6);
+  background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(43, 108, 255, 0.1));
+  box-shadow:
+    0 0 14px rgba(0, 240, 255, 0.45),
+    inset 0 0 10px rgba(0, 240, 255, 0.25);
+  transform: rotate(45deg);
 }
 
 .login-title {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  text-align: center;
-  color: #303133;
-  letter-spacing: 1px;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #eafeff;
+  text-shadow: 0 0 12px rgba(0, 240, 255, 0.55);
+}
+
+.login-subtitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.38em;
+  color: #3fd8e8;
+  text-transform: uppercase;
 }
 
 .login-button {
   width: 100%;
+  letter-spacing: 0.28em;
 }
 
-.login-tip {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.6;
-  text-align: center;
-  color: #909399;
+.login-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: #4c7f95;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22e6a5;
+  box-shadow: 0 0 8px #22e6a5;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot {
+    animation: none;
+  }
 }
 </style>
