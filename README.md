@@ -189,6 +189,19 @@ refactor(common): 抽取 PageResult
 4. 不提交 `target/`、`.idea/`、`node_modules/`、真实数据库密码。
 5. 完成的定义：本地能跑 + 自测通过 + 文档更新 + PR 已提。
 
+## 常见问题
+
+### IDEA 报 `程序包 org.springframework.security.config 不存在`
+
+命令行 `mvn clean test` 能通过时，通常是 IDEA 的 Maven 模型没有刷新：
+
+1. 右键 `pom.xml` → `Maven` → `Reload project`；
+2. 或打开 Maven 工具窗，点刷新按钮；
+3. 仍然报错：`File` → `Invalidate Caches...` → `Invalidate and Restart`；
+4. 检查 `File` → `Project Structure` → `Modules` → `salary-system` → `Dependencies`，应能看到 `org.springframework.security:spring-security-config:7.1.2`。
+
+项目已在 `pom.xml` 中显式声明 `spring-security-config`、`spring-security-web`、`spring-security-crypto`，避免 IDE 只索引直接依赖时找不到包。
+
 ## 文档
 
 - [接口契约](docs/api.md)

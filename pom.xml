@@ -40,6 +40,20 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- SecurityConfig 直接 import 的模块；显式声明，避免 IDE 只按直接依赖建索引时找不到包 -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <!-- JWT：api 编译期，impl/jackson 运行期 -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
