@@ -32,7 +32,7 @@ sys_user（独立表，不参与上述业务外键）
 | sys_user | password | VARCHAR(100) NOT NULL | 存 BCrypt 哈希，不存明文，OK |
 | sys_user | role | VARCHAR(20) | ADMIN/HR/EMPLOYEE，当前仅写入 JWT，未做接口级权限 |
 | sys_department | id | INT AI PK | OK |
-| sys_department | dept_name | VARCHAR(50) NOT NULL | 建议后续补唯一键 `uk_dept_name`，避免重名部门（当前未加） |
+| sys_department | dept_name | VARCHAR(50) NOT NULL | 已评估：现库 3 个部门无重名、部门量级小，暂不加唯一键；后续出现重名再补 `uk_dept_name` |
 | sys_employee | id | INT AI PK | OK |
 | sys_employee | emp_no | VARCHAR(20) NOT NULL UK | 工号唯一，OK |
 | sys_employee | dept_id | INT FK → sys_department.id | 外键生效；允许为空表示未分配部门，OK |
@@ -61,7 +61,7 @@ sys_user（独立表，不参与上述业务外键）
 | `uk_emp_month(emp_id, salary_month)` | sys_salary | 已添加，唯一约束 + 加速员工/月份查询 |
 | `idx_salary_month(salary_month)` | sys_salary | 已添加，报表按月份筛选 |
 | `idx_emp_name(name)` | sys_employee | 数据量大时再加 |
-| `uk_dept_name(dept_name)` | sys_department | 建议后续加，防止重名部门 |
+| `uk_dept_name(dept_name)` | sys_department | 暂不加：现库无重名、部门量级小；出现重名时再补 |
 
 ## 5. 金额计算口径
 
@@ -69,9 +69,11 @@ sys_user（独立表，不参与上述业务外键）
 - 校验：基本工资/奖金/扣款非负；扣款 ≤ 基本工资 + 奖金（实发不允许为负）。
 - 前端传入的 `actualPay` 不参与入库，避免篡改金额。
 
-## 6. 与现库核对
+## 6. 与现库核对（2026-11-18 C9 收尾复核）
 
-- 本机 `salary_db` 已包含四张表、外键、三条 2024-09 薪资数据和 `admin` 登录用户。
-- `uk_emp_month`、`idx_salary_month` 已应用到本地库。
-- 现库若为旧结构、缺 `uk_emp_month` 或 `sys_user`，在测试环境执行 `docs/init.sql` 即可；正式数据请先备份。
-- 已知限制：角色目前只写入 JWT，尚未做接口级权限；部门名称唯一键待评估。
+- `docs/init.sql` 在空库一次执行成功：建出 `sys_department`、`sys_employee`、`sys_salary`、`sys_user` 四张表，自检记录数为部门 3、员工 3、薪资 3、用户 1。
+- 约束与索引核对：`uk_emp_month(emp_id, salary_month)`、`idx_salary_month(salary_month)`、员工 `emp_no` 唯一键、用户 `uk_username`、外键 `fk_emp_dept` / `fk_salary_emp` 均在。
+- `sys_user.password` 为 BCrypt 哈希（`$2a$10$` 前缀，长度 60），不存明文；登录由 `BCryptPasswordEncoder.matches` 校验。
+- 部门表 3 条数据无重名；`dept_name` 唯一键本次评估为暂不加（见 BUG-001）。
+- 旧结构库若缺 `uk_emp_month` 或 `sys_user`，在测试环境执行 `docs/init.sql` 即可重建；正式数据请先备份。
+- 已知限制：角色目前只写入 JWT，尚未做接口级权限。
