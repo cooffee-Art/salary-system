@@ -4,6 +4,10 @@
 >
 > 技术栈：Java SE + JDBC + MySQL
 > **不使用 Spring Boot、Vue、浏览器或任何 Web 容器。**
+>
+> **Branch status:** `feature/console-refactor` — console skeleton, bilingual i18n and login stub are ready; employee/salary/DB modules are still in progress.
+>
+> **分支状态：** 控制台骨架、双语语言包、登录占位已完成；员工、薪资、数据库模块由 Ming / Leo / Lucas 继续实现。
 
 ---
 
@@ -93,7 +97,7 @@ salary-system/
 └── README.md
 ```
 
-> `sql/init.sql` 和 `src/.../Main.java` 由重构分支提供；如果尚未提交，说明控制台版本仍在开发中。
+> `src/.../Main.java` 控制台骨架已提交；`sql/init.sql` 由 Lucas 提供，员工/薪资模块由 Ming / Leo 继续实现。
 
 ---
 
@@ -146,6 +150,8 @@ salary_db
 | --- | --- | --- |
 | 管理员 | `admin` | `Admin@123` |
 
+> 控制台骨架还内置 `employee / User@123` 用于测试普通员工菜单；接入 JDBC 登录后以 `sys_user` 表为准。
+>
 > 普通员工账号由管理员在系统内创建。
 >
 > 首次登录后建议修改默认密码。
@@ -225,13 +231,15 @@ javac -encoding UTF-8 -cp "lib/*" -d out $(find src -name "*.java")
 ```powershell
 chcp 65001
 
-java -Dfile.encoding=UTF-8 -cp "out;resources;lib/*" com.salary.console.Main
+java "-Dfile.encoding=UTF-8" "-Dstdout.encoding=UTF-8" "-Dstderr.encoding=UTF-8" `
+  -cp "out;resources;lib/*" com.salary.console.Main
 ```
 
 ### macOS / Linux
 
 ```bash
-java -Dfile.encoding=UTF-8 -cp "out:resources:lib/*" com.salary.console.Main
+java -Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 \
+  -cp "out:resources:lib/*" com.salary.console.Main
 ```
 
 说明：
@@ -329,6 +337,29 @@ validation.phone.invalid=Phone number must be 11 digits and start with 1
 validation.password.weak=Password must be at least 8 characters and include upper/lowercase letters, a digit and a special character
 ```
 
+### 在 Java 中使用语言包
+
+```java
+import com.salary.console.i18n.I18n;
+import java.util.Locale;
+
+// 读取普通文案
+System.out.println(I18n.get("menu.employee"));
+
+// 带占位符的文案
+System.out.println(I18n.get("validation.required", "Email"));
+
+// 运行时切换
+I18n.setLocale(Locale.ENGLISH);
+```
+
+约定：
+
+- 新增任何面向用户的文本，必须同时补 `messages_zh.properties` 和 `messages_en.properties`。
+- Java 代码中不要硬编码中文/英文提示。
+- key 使用小写点号命名，例如 `employee.name.required`、`salary.generate.success`。
+- 带参数的文案统一用 `{0}`、`{1}` 占位。
+
 ---
 
 ## 11. 测试数据验证
@@ -390,7 +421,7 @@ mysql -uroot -p < sql/init.sql
 ### 12.4 中文乱码
 
 - 编译时加 `-encoding UTF-8`；
-- 运行时加 `-Dfile.encoding=UTF-8`；
+- 运行时加 `-Dfile.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8`；
 - Windows 终端执行 `chcp 65001`；
 - 数据库、表、连接字符集统一使用 `utf8mb4`。
 
