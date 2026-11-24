@@ -1,377 +1,536 @@
-# 员工薪资管理系统（salary-system）
+# 员工薪资管理系统（Java Console Edition）
 
-> 4 人学生团队的练手项目：把课堂上的 Spring Boot / MyBatis-Plus / Vue 串成一个能演示、能讲清楚的小系统。
+> 大学期末项目 · 纯 Java 控制台应用程序
+>
+> 技术栈：Java SE + JDBC + MySQL
+> **不使用 Spring Boot、Vue、浏览器或任何 Web 容器。**
 
-## Demo Run Guide / 演示运行指南
+---
 
-> Teacher/grader: follow this section to run the project.
-> 老师/验收人：按这一节操作即可运行项目。
+## 1. 项目简介
 
-### Step 1 — Open the Project / 打开项目
+本项目是一个面向学校/企业场景的员工薪资管理控制台程序，支持：
 
-1. Open IntelliJ IDEA.
-2. `File` → `Open`, select the `salary-system` folder (the folder containing `pom.xml`).
-3. Click `OK` → `Open as Project`, then wait for Maven import and indexing.
-4. If IDEA reports `程序包 org.springframework... 不存在`, right-click `pom.xml` → `Maven` → `Reload project`.
+- 管理员 / 普通员工登录与角色权限
+- 员工信息管理（新增、查询、修改、删除）
+- 部门管理
+- 薪资计算、工资条打印、月度报表
+- 中英文双语切换
+- 严格的数据验证（邮箱、手机号、密码、金额等）
+- MySQL 数据持久化（原生 JDBC）
 
-> 不需要手动把 JDBC 驱动 JAR 放进 `lib/`；Maven 会自动下载依赖。
+程序通过终端菜单交互，不依赖图形界面或浏览器。
 
-### Step 2 — Prerequisites / 环境要求
+---
 
-| Software | Required version |
+## 2. 技术栈
+
+| 层次 | 技术 | 说明 |
+| --- | --- | --- |
+| 语言 | Java SE 17+ | 纯 Java，无 Spring |
+| 数据库 | MySQL 8.0+ | InnoDB / utf8mb4 |
+| 持久化 | 原生 JDBC | `java.sql` + MySQL Connector/J |
+| 本地化 | `ResourceBundle` | `messages_zh.properties` / `messages_en.properties` |
+| 输入 | `Scanner` | 控制台交互 |
+| 构建 | `javac` / `java` | 不依赖 Maven/Gradle |
+
+> 项目中不应出现 `spring-boot`、`spring-web`、`vue` 等依赖。
+>
+> 评审时可执行 `grep -ri "spring" src/` 检查，结果应为空。
+
+---
+
+## 3. 运行环境要求
+
+| 软件 | 版本要求 |
 | --- | --- |
-| JDK | 21+（JDK 25 works） |
-| MySQL | 8.0 |
-| Node.js | 18+（only for frontend） |
-| IntelliJ IDEA | 2023+ |
-| Maven | Use the included `mvnw` wrapper |
+| JDK | 17 或 21（推荐 21 LTS） |
+| MySQL | 8.0+ |
+| MySQL Connector/J | 8.4.0（放在 `lib/`） |
+| 终端 | Windows PowerShell / macOS Terminal / Linux Shell |
+| IDE（可选） | IntelliJ IDEA / VS Code |
 
-MySQL must be running before starting the backend.
-启动后端前请确认 MySQL 已启动。
-
-### Step 3 — Set Up the Database / 初始化数据库
-
-1. Open MySQL Workbench / HeidiSQL and connect to local MySQL.
-2. Open `docs/init.sql`.
-3. Select the `salary_db` database and execute the script.
-
-Or use the command line:
+### 检查环境
 
 ```bash
-mysql -uroot -p --default-character-set=utf8mb4 < docs/init.sql
+java -version
+javac -version
+mysql --version
 ```
 
-After execution, these four tables should exist:
+确保 `java` 和 `javac` 来自同一个 JDK。
 
-```text
-sys_user
-sys_department
-sys_employee
-sys_salary
-```
+---
 
-> Warning: `docs/init.sql` drops and recreates the four tables.
->
-> 警告：脚本会删表重建，只用于本地练习/测试库，不要直接对正式数据执行。
-
-### Step 4 — Configure the Database Password / 配置数据库密码
-
-`src/main/resources/application.yaml` reads the password from an environment variable:
-
-```yaml
-password: "${MYSQL_PASSWORD:你的本机密码}"
-```
-
-Recommended: in IDEA, open `Run` → `Edit Configurations` → `Environment variables` and add:
-
-```text
-MYSQL_PASSWORD=你的MySQL密码
-```
-
-Or edit the `password` value directly. Do not commit a real password to a public repository.
-
-### Step 5 — Start the Backend / 启动后端
-
-1. Open `src/main/java/com/example/salarysystem/SalarySystemApplication.java`.
-2. Click the green Run button next to `SalarySystemApplication`.
-3. Or run in a terminal:
-
-```powershell
-.\mvnw.cmd spring-boot:run
-```
-
-Success looks like:
-
-```text
-Tomcat started on port 8080
-Started SalarySystemApplication
-```
-
-Backend URL: `http://localhost:8080`
-
-### Step 6 — Start the Frontend / 启动前端
-
-Open a second terminal:
-
-```powershell
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```text
-http://127.0.0.1:5173
-```
-
-> The frontend is a Vite project, not a static HTML page; it must be started with `npm run dev`.
-
-### Step 7 — Login / 登录
-
-Default administrator account:
-
-```text
-Username / 用户名: admin
-Password / 密码:   admin123
-```
-
-> Current frontend status: login, employee management, salary management and department report pages are available.
->
-> The frontend now calls the real Spring Boot backend through the Vite `/api` proxy.
->
-> 当前前端已包含登录、员工管理、薪资管理、部门报表页面，并已接入真实后端。
-
-### Step 8 — Verify the Backend API / 验证后端接口
-
-The login endpoint is public; all other `/api/**` endpoints require a Bearer Token.
-
-PowerShell example:
-
-```powershell
-$login = Invoke-RestMethod "http://localhost:8080/api/auth/login" `
-  -Method Post `
-  -ContentType "application/json" `
-  -Body '{"username":"admin","password":"admin123"}'
-
-$token = $login.data.token
-
-Invoke-RestMethod "http://localhost:8080/api/employees" `
-  -Headers @{ Authorization = "Bearer $token" } |
-  ConvertTo-Json -Depth 5
-```
-
-Opening `http://localhost:8080/api/employees` directly in a browser returns 401 because the browser does not send the Authorization header. This is expected.
-浏览器直接打开业务接口会返回 401，这是正常的，需要先登录拿 Token。
-
-### Step 9 — Stop / 停止
-
-- Frontend: press `Ctrl + C` in the `npm run dev` terminal.
-- Backend: click the red Stop button in IDEA.
-
-### Common Issues / 常见问题
-
-| Problem | Solution |
-| --- | --- |
-| IDEA 报 `程序包 org.springframework.security.config 不存在` | Right-click `pom.xml` → `Maven` → `Reload project`; then `Build` → `Rebuild Project` |
-| `Access denied for user 'root'` | Check `MYSQL_PASSWORD` / `application.yaml` password |
-| `Unknown database 'salary_db'` | Run `docs/init.sql` first |
-| `Port 8080 already in use` | Stop the old backend process or change `server.port` |
-| `Port 5173 already in use` | Vite will choose 5174; use the URL printed in the terminal |
-| 401 on API request | Log in first and add `Authorization: Bearer <token>` |
-| Frontend API 502 / cannot connect | Make sure the backend is running on 8080 and the Vite proxy targets `127.0.0.1:8080` |
-
-## 技术栈
-
-| 层次 | 技术 | 版本 |
-| --- | --- | --- |
-| 后端 | Spring Boot | 4.1.2 |
-| 后端 | MyBatis-Plus | 3.5.18（boot4 starter） |
-| 后端 | Spring Security + JWT | Security 7 + jjwt 0.12.6 |
-| 后端 | MySQL | 8.0 |
-| 后端 | JDK | 21（本机用 25 也能编译运行） |
-| 前端 | Vue 3 + Vite | 员工/薪资/报表页面已完成 |
-| 前端 | Element Plus + Axios | 已接入 |
-| 工具 | IDEA / HeidiSQL / Git / GitHub / Gitee | — |
-
-> 版本注意：Spring Boot 4 的 Web starter 叫 `spring-boot-starter-webmvc`；MyBatis-Plus 3.5.18 的 `IService` / `ServiceImpl` 包名是 `com.baomidou.mybatisplus.spring.service`，旧教程里的 `...extension.service` 会编译不过。
-
-## 已实现
-
-- 员工列表（连表带部门名称）
-- 员工分页 + 姓名/工号关键字搜索
-- 员工详情
-- 员工新增、完整修改、删除/离职（保留薪资历史）
-- 员工参数校验、工号唯一检查、部门 ID / 名称组合筛选
-- 部门下拉查询（id、deptName）
-- JWT 登录、无状态鉴权、统一 401/403 返回
-- 薪资分页查询（员工 + 部门 + 薪资三表连查）
-- 薪资新增/修改/删除/详情，实发工资由后端重算
-- 薪资金额校验：非负、扣款不能大于收入、同员工同月唯一
-- 部门月度薪资汇总报表
-- 月度工资批量生成（事务 + 唯一约束幂等）
-- 前端登录、员工管理、薪资管理、部门报表页面
-- 前端 Vite `/api` 代理与真实后端联调
-- 统一返回结构 `Result<T>` / `PageResult<T>` 与全局异常处理
-- MyBatis-Plus 分页插件、驼峰映射、SQL 控制台日志
-- 本地联调 CORS
-- 数据库初始化脚本、接口契约、团队任务书
-
-## 目录结构
+## 4. 项目结构
 
 ```text
 salary-system/
-├── src/main/java/com/example/salarysystem/
-│   ├── SalarySystemApplication.java
-│   ├── common/                 # Result、PageResult、全局异常
-│   ├── config/                 # MyBatis-Plus、Security 配置
-│   ├── controller/             # 员工、部门、登录、薪资接口
-│   ├── dto/                    # 员工保存、登录参数
-│   ├── entity/                 # SysEmployee、SysDepartment、SysSalary、SysUser
-│   ├── mapper/                 # 各模块数据库访问
-│   ├── security/               # JWT 签发、解析、过滤器
-│   ├── service/                # 接口 + impl
-│   └── vo/                     # 列表/报表/登录返回对象
-├── src/main/resources/
-│   └── application.yaml
-├── frontend/                   # Vue 3 + Vite 前端
-├── docs/
-│   ├── init.sql                # 建库、建表、测试数据
-│   ├── api.md                  # 前后端接口契约
-│   ├── db-review.md            # 数据库评审
-│   ├── backlog-b-c.md          # B/C 工作清单
-│   ├── team-tasks.md           # 三名组员的任务书
-│   ├── test/                   # 测试用例与 Bug 清单
-│   └── roadmap.md              # 组长进阶路线
-├── pom.xml
+├── src/
+│   └── com/salary/console/
+│       ├── Main.java                 # 程序入口
+│       ├── config/
+│       │   └── DatabaseConfig.java   # JDBC URL / 用户名 / 密码
+│       ├── db/
+│       │   └── DatabaseManager.java  # 连接管理
+│       ├── i18n/
+│       │   └── I18n.java             # ResourceBundle 封装
+│       ├── model/                    # User / Employee / Salary 等
+│       ├── dao/                      # JDBC DAO
+│       ├── service/                  # 业务逻辑
+│       ├── validation/
+│       │   └── Validator.java        # 邮箱、手机号、密码校验
+│       └── ui/
+│           └── ConsoleMenu.java      # 主菜单与输入循环
+├── resources/
+│   ├── messages_zh.properties        # 中文语言包
+│   └── messages_en.properties        # 英文语言包
+├── sql/
+│   └── init.sql                      # 建库、建表、测试数据
+├── lib/
+│   └── mysql-connector-j-8.4.0.jar   # JDBC 驱动
+├── out/                              # 编译输出（git 忽略）
 └── README.md
 ```
 
-## 开发环境启动（详细）
+> `sql/init.sql` 和 `src/.../Main.java` 由重构分支提供；如果尚未提交，说明控制台版本仍在开发中。
 
-### 1. 初始化数据库
+---
 
-> `docs/init.sql` 会先删除四张表再重建，只在本地测试库执行。
+## 5. 初始化数据库
+
+### 5.1 启动 MySQL
+
+确保 MySQL 服务已启动：
 
 ```bash
-mysql -uroot -p --default-character-set=utf8mb4 < docs/init.sql
+# Windows（管理员 PowerShell）
+net start MySQL80
+
+# macOS（Homebrew）
+brew services start mysql
 ```
 
-或者用 HeidiSQL 打开 `docs/init.sql`，确认当前库是 `salary_db` 后执行。
+### 5.2 执行初始化脚本
 
-### 2. 配置数据库密码
+在项目根目录执行：
 
-`application.yaml` 默认读取环境变量 `MYSQL_PASSWORD`，没有就用本地默认值。推荐在 IDEA 的 Run Configuration 里加环境变量：
+```bash
+mysql -uroot -p --default-character-set=utf8mb4 < sql/init.sql
+```
+
+也可以使用 MySQL Workbench 或 HeidiSQL：
+
+1. 连接本地 MySQL；
+2. 打开 `sql/init.sql`；
+3. 选择目标数据库；
+4. 执行脚本。
+
+脚本会创建：
 
 ```text
-MYSQL_PASSWORD=你的本机密码
+salary_db
+├── sys_user          # 登录用户与角色
+├── sys_department    # 部门
+├── sys_employee      # 员工
+└── sys_salary        # 月度薪资
 ```
 
-也可以直接改 `application.yaml` 的 `password`，但不要把真实密码提交到公开仓库。
+> 警告：`init.sql` 会删除并重建这四张表，仅用于本地练习或测试库。
+>
+> 不要直接对包含正式数据的数据库执行。
 
-### 3. 启动后端
+### 5.3 默认账号
 
-Windows：
+| 角色 | 用户名 | 密码 |
+| --- | --- | --- |
+| 管理员 | `admin` | `Admin@123` |
+
+> 普通员工账号由管理员在系统内创建。
+>
+> 首次登录后建议修改默认密码。
+
+---
+
+## 6. 配置数据库连接
+
+打开：
+
+```text
+src/com/salary/console/config/DatabaseConfig.java
+```
+
+修改以下常量：
+
+```java
+public final class DatabaseConfig {
+    public static final String URL =
+            "jdbc:mysql://localhost:3306/salary_db"
+            + "?useUnicode=true&characterEncoding=UTF-8"
+            + "&serverTimezone=Asia/Shanghai"
+            + "&useSSL=false&allowPublicKeyRetrieval=true";
+
+    public static final String USER = "root";
+    public static final String PASSWORD = "your_mysql_password";
+}
+```
+
+说明：
+
+- 数据库名默认 `salary_db`，与 `sql/init.sql` 一致。
+- 如果 MySQL 端口不是 `3306`，修改 URL。
+- 不要把真实密码提交到公开仓库。
+
+---
+
+## 7. 编译
+
+### Windows PowerShell
 
 ```powershell
-.\mvnw.cmd spring-boot:run
+cd C:\path\to\salary-system
+
+New-Item -ItemType Directory -Force out | Out-Null
+
+javac -encoding UTF-8 -cp "lib/*" -d out `
+  (Get-ChildItem -Recurse -Filter *.java -Path src | ForEach-Object { $_.FullName })
 ```
 
-macOS / Linux：
+### macOS / Linux
 
 ```bash
-./mvnw spring-boot:run
+cd /path/to/salary-system
+
+mkdir -p out
+
+javac -encoding UTF-8 -cp "lib/*" -d out $(find src -name "*.java")
 ```
 
-启动成功后，先登录拿 Token（默认账号 `admin / admin123`，仅本地练习用）：
+编译成功后，`out/` 下会出现 `com/salary/console/...` 的 `.class` 文件。
+
+### 在 IntelliJ IDEA 中编译（可选）
+
+1. `File` → `Open`，选择项目根目录；
+2. 将 `src` 标记为 Sources Root；
+3. 将 `resources` 标记为 Resources Root；
+4. 将 `lib/mysql-connector-j-8.4.0.jar` 加入 Module Dependencies；
+5. 运行 `com.salary.console.Main`。
+
+---
+
+## 8. 运行
+
+### Windows PowerShell
+
+```powershell
+chcp 65001
+
+java -Dfile.encoding=UTF-8 -cp "out;resources;lib/*" com.salary.console.Main
+```
+
+### macOS / Linux
 
 ```bash
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin123"}'
+java -Dfile.encoding=UTF-8 -cp "out:resources:lib/*" com.salary.console.Main
 ```
 
-然后把返回的 `data.token` 放到请求头：
+说明：
+
+- Windows 的 classpath 分隔符是 `;`，macOS/Linux 是 `:`。
+- `resources` 必须在 classpath 中，否则 `ResourceBundle` 找不到语言包。
+- `lib/*` 用于加载 MySQL JDBC 驱动。
+
+---
+
+## 9. 控制台菜单
+
+### 启动后
 
 ```text
-Authorization: Bearer <token>
+========================================
+ Employee Salary Management System
+ 员工薪资管理系统
+========================================
+ 1. English
+ 2. 中文
+ 0. Exit / 退出
+========================================
+Please select / 请选择:
 ```
 
-再访问：
+### 登录后（管理员）
 
 ```text
-http://localhost:8080/api/employees
-http://localhost:8080/api/employees/page?current=1&size=10&keyword=张
-http://localhost:8080/api/salaries/page?month=2024-09
-http://localhost:8080/api/salaries/report/department?month=2024-09
+1. Employee Management / 员工管理
+2. Salary Management   / 薪资管理
+3. Department Report   / 部门报表
+4. Switch Language     / 切换语言
+5. Logout              / 退出登录
+0. Exit                / 退出系统
 ```
 
-> 除 `/api/auth/login` 外，所有 `/api/**` 接口都需要 Token。
+### 登录后（普通员工）
 
-### 4. 启动前端
-
-```bash
-cd frontend
-npm install
-npm run dev
+```text
+1. My Profile          / 我的信息
+2. My Salary           / 我的薪资
+3. Switch Language     / 切换语言
+4. Logout              / 退出登录
+0. Exit                / 退出系统
 ```
 
-默认地址 `http://localhost:5173`。
+---
 
-> 前端已通过 Vite `/api` proxy 接入真实后端；启动后使用 `admin / admin123` 登录。
+## 10. 测试中英文切换
 
-## 接口
+### 测试步骤
 
-完整字段、请求/响应示例、错误码见 [docs/api.md](docs/api.md)。
+1. 启动程序，在语言选择界面输入 `2`，进入中文界面。
+2. 使用 `admin / Admin@123` 登录。
+3. 进入主菜单，确认所有菜单项、提示、错误信息均为中文。
+4. 选择 `4. Switch Language / 切换语言`，输入 `1` 切换英文。
+5. 确认主菜单、输入提示、成功/失败提示全部变为英文。
+6. 在员工新增页面输入非法邮箱 `bad-email`，确认英文错误提示。
+7. 再切回中文，重复输入 `bad-email`，确认中文错误提示。
+8. 退出程序并重新启动，确认语言选择界面正常出现。
 
-| 方法 | 路径 | 说明 | 状态 |
-| --- | --- | --- | --- |
-| POST | `/api/auth/login` | 登录，返回 JWT | 已完成 |
-| GET | `/api/auth/me` | 当前登录人 | 已完成 |
-| GET | `/api/employees` | 全部员工（带部门名） | 已完成 |
-| GET | `/api/employees/page` | 分页 + 关键字搜索 | 已完成 |
-| GET | `/api/employees/{id}` | 员工详情 | 已完成 |
-| POST | `/api/employees` | 新增员工 | 已完成 |
-| PUT | `/api/employees/{id}` | 完整修改员工 | 已完成 |
-| DELETE | `/api/employees/{id}` | 删除/离职 | 已完成 |
-| GET | `/api/departments` | 部门下拉 | 已完成 |
-| GET | `/api/salaries` | 薪资列表（月份/员工/关键字） | 已完成 |
-| GET | `/api/salaries/page` | 薪资分页（三表连查） | 已完成 |
-| GET | `/api/salaries/{id}` | 薪资详情 | 已完成 |
-| POST | `/api/salaries` | 新增薪资，后端重算实发 | 已完成 |
-| PUT | `/api/salaries/{id}` | 修改薪资 | 已完成 |
-| DELETE | `/api/salaries/{id}` | 删除薪资 | 已完成 |
-| GET | `/api/salaries/report/department` | 部门月度汇总 | 已完成 |
-| POST | `/api/salaries/generate` | 批量生成月度工资 | 已完成 |
+### 验收标准
 
-## 分支与提交规范
+- [ ] 启动时可选择 English / 中文
+- [ ] 菜单、提示、表头、验证错误均随语言切换
+- [ ] 切换语言不需要重启程序
+- [ ] 两种语言的输出均无乱码
+- [ ] 语言包缺失时程序不崩溃，回退到默认语言
 
-| 分支 | 用途 | 谁能合并 |
+### 语言包文件
+
+```text
+resources/messages_zh.properties
+resources/messages_en.properties
+```
+
+示例：
+
+```properties
+# messages_zh.properties
+menu.employee=员工管理
+menu.salary=薪资管理
+validation.email.invalid=邮箱格式不正确
+validation.phone.invalid=手机号必须是 11 位，且以 1 开头
+validation.password.weak=密码至少 8 位，且包含大小写字母、数字和特殊字符
+```
+
+```properties
+# messages_en.properties
+menu.employee=Employee Management
+menu.salary=Salary Management
+validation.email.invalid=Invalid email format
+validation.phone.invalid=Phone number must be 11 digits and start with 1
+validation.password.weak=Password must be at least 8 characters and include upper/lowercase letters, a digit and a special character
+```
+
+---
+
+## 11. 测试数据验证
+
+### 验证规则
+
+| 字段 | 规则 |
+| --- | --- |
+| 邮箱 | 必须符合 `^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$` |
+| 手机号 | 必须符合 `^1[3-9]\d{9}$`，共 11 位 |
+| 密码 | 至少 8 位，包含大写、小写、数字、特殊字符 |
+| 用户名 | 4–20 位字母、数字或下划线，唯一 |
+| 基本工资 | 非负，最多两位小数 |
+| 奖金 / 扣款 | 非负，扣款不能大于基本工资 + 奖金 |
+| 必填项 | 姓名、部门、邮箱、手机号不能为空 |
+
+### 测试用例
+
+| 编号 | 输入 | 预期结果 |
 | --- | --- | --- |
-| `main` | 可演示版本，答辩/展示用 | 组长 |
-| `dev` | 集成分支，日常联调 | 组长 |
-| `feature/xxx` | 个人功能分支 | 本人推送，PR 到 dev |
-| `fix/xxx` | 修 Bug | 本人推送，PR 到 dev |
+| V-01 | 邮箱 `zhangsan@example.com` | 通过 |
+| V-02 | 邮箱 `zhangsan@` | 失败：邮箱格式不正确 |
+| V-03 | 手机号 `13800138000` | 通过 |
+| V-04 | 手机号 `1380013800` | 失败：手机号必须是 11 位 |
+| V-05 | 密码 `Admin@123` | 通过 |
+| V-06 | 密码 `123456` | 失败：密码强度不足 |
+| V-07 | 密码 `abcdefgh` | 失败：缺少大写、数字、特殊字符 |
+| V-08 | 重复用户名 / 邮箱 / 手机号 | 失败：数据已存在 |
+| V-09 | 基本工资 `-100` | 失败：金额不能为负 |
+| V-10 | 扣款大于基本工资 + 奖金 | 失败：扣款超额 |
+| V-11 | 姓名为空 | 失败：姓名不能为空 |
 
-提交信息格式：
+### 黑白盒测试建议
 
-```text
-feat(employee): 新增员工接口
-fix(salary): 修复月份查询越界
-docs(api): 补充部门下拉字段
-refactor(common): 抽取 PageResult
+- 黑盒：只通过控制台输入，验证提示和数据库结果。
+- 白盒：直接调用 `Validator` 方法，验证正则和边界条件。
+- 每次验证分别在中文、英文下各执行一次，确认错误信息已本地化。
+
+---
+
+## 12. 常见问题
+
+### 12.1 `Access denied for user 'root'@'localhost'`
+
+检查 `DatabaseConfig.PASSWORD` 是否与 MySQL 密码一致。
+
+### 12.2 `Unknown database 'salary_db'`
+
+先执行：
+
+```bash
+mysql -uroot -p < sql/init.sql
 ```
 
-## 团队约定
+### 12.3 `No suitable driver found for jdbc:mysql://...`
 
-1. 每天 21:00 前把代码推到自己的 `feature` 分支，21:30 群里 15 分钟站会。
-2. PR 必须写清楚：改了什么、怎么自测、截图或请求示例。
-3. 接口字段以 `docs/api.md` 为准，要改先群里说。
-4. 不提交 `target/`、`.idea/`、`node_modules/`、真实数据库密码。
-5. 完成的定义：本地能跑 + 自测通过 + 文档更新 + PR 已提。
+确认 `lib/mysql-connector-j-8.4.0.jar` 存在，并且运行时 classpath 包含 `lib/*`。
 
-## 常见问题（详细排查）
+### 12.4 中文乱码
 
-### IDEA 报 `程序包 org.springframework.security.config 不存在`
+- 编译时加 `-encoding UTF-8`；
+- 运行时加 `-Dfile.encoding=UTF-8`；
+- Windows 终端执行 `chcp 65001`；
+- 数据库、表、连接字符集统一使用 `utf8mb4`。
 
-命令行 `mvn clean test` 能通过时，通常是 IDEA 的 Maven 模型没有刷新：
+### 12.5 `ResourceBundle` 找不到语言包
 
-1. 右键 `pom.xml` → `Maven` → `Reload project`；
-2. 或打开 Maven 工具窗，点刷新按钮；
-3. 仍然报错：`File` → `Invalidate Caches...` → `Invalidate and Restart`；
-4. 检查 `File` → `Project Structure` → `Modules` → `salary-system` → `Dependencies`，应能看到 `org.springframework.security:spring-security-config:7.1.2`。
+确认 `resources` 在 classpath 中，且文件名严格为：
 
-项目已在 `pom.xml` 中显式声明 `spring-security-config`、`spring-security-web`、`spring-security-crypto`，避免 IDE 只索引直接依赖时找不到包。
+```text
+messages_zh.properties
+messages_en.properties
+```
 
-## 文档
+### 12.6 找不到 `Main` 类
 
-- [接口契约](docs/api.md)
-- [数据库初始化脚本](docs/init.sql)
-- [数据库评审报告](docs/db-review.md)
-- [测试用例](docs/test/cases.md)
-- [Bug 清单](docs/test/bugs.md)
-- [组员任务书](docs/team-tasks.md)
-- [B/C 当前迭代工作清单](docs/backlog-b-c.md)
-- [员工模块开发、测试与交接说明](docs/employee-development.md)
-- [Postman 员工管理集合](docs/postman/employee-management.postman_collection.json)
-- [组长进阶路线](docs/roadmap.md)
+确认编译输出在 `out/`，运行命令中的主类是：
+
+```text
+com.salary.console.Main
+```
+
+---
+
+## 13. Git 分支管理建议
+
+当前 `main` 仍保留可运行的 Web 版本；控制台重构在独立分支完成，避免重构期间破坏主分支。
+
+### 13.1 分支模型
+
+```text
+main
+└── feature/console-refactor          # 长期集成分支
+    ├── feature/console-refactor/architecture   # Charles：架构 + 双语
+    ├── feature/console-refactor/employee       # Ming：员工 + 验证
+    ├── feature/console-refactor/salary         # Leo：薪资 + 报表
+    └── feature/console-refactor/db-auth        # Lucas：数据库 + 登录 + 测试
+```
+
+| 分支 | 用途 | 合并目标 |
+| --- | --- | --- |
+| `main` | 稳定可演示版本 | 只接受验收通过的合并 |
+| `feature/console-refactor` | 控制台重构集成 | 验收后合并到 `main` |
+| `feature/console-refactor/*` | 个人短期分支 | PR 到 `feature/console-refactor` |
+| `hotfix/*` | 紧急修复 | `main` + `feature/console-refactor` |
+| `docs/*` | 文档修改 | 对应分支 |
+
+### 13.2 初始化分支
+
+```bash
+git switch main
+git pull origin main
+git switch -c feature/console-refactor
+git push -u origin feature/console-refactor
+```
+
+### 13.3 成员开发流程
+
+```bash
+# 每次开发前同步集成分支
+git switch feature/console-refactor
+git pull origin feature/console-refactor
+
+# 创建自己的短期分支
+git switch -c feature/console-refactor/employee
+
+# 开发、编译、自测
+git add .
+git commit -m "feat(console-employee): 实现员工新增与数据验证"
+git push -u origin feature/console-refactor/employee
+```
+
+然后在 GitHub / Gitee 发起 PR，目标分支选择：
+
+```text
+feature/console-refactor
+```
+
+不要直接 PR 到 `main`。
+
+### 13.4 合并与验收
+
+1. 每个 PR 至少 1 人 review（建议 Charles）。
+2. 合并前必须满足：
+   - `javac` 编译通过；
+   - 程序可启动；
+   - 中英文各跑一遍；
+   - 数据验证用例通过；
+   - `sql/init.sql` 可在空库执行；
+   - 没有引入 Spring / Vue 依赖。
+3. 每周至少一次将 `feature/console-refactor` 的最新代码合并回个人分支，减少冲突。
+4. 控制台版本通过老师验收后，再将 `feature/console-refactor` 合并到 `main`，并打标签：
+
+```bash
+git switch main
+git merge --no-ff feature/console-refactor
+git tag -a v1.0-console -m "Console version accepted"
+git push origin main --tags
+```
+
+### 13.5 提交信息规范
+
+```text
+feat(console): 新增控制台主菜单
+feat(i18n): 添加中英文语言包
+feat(validation): 实现邮箱/手机号/密码校验
+feat(salary): 实现工资计算与工资条
+fix(console): 修复语言切换后提示未刷新
+test(validation): 补充边界测试用例
+docs: 更新 README 与数据库脚本
+```
+
+### 13.6 注意事项
+
+- 不要直接在 `main` 上提交重构代码。
+- 不要强制推送到共享分支。
+- 合并前先 `git pull --rebase origin feature/console-refactor`。
+- 数据库脚本变更必须同步通知全组。
+- 重构期间保持 `main` 可运行，便于随时演示 Web 版本。
+
+---
+
+## 14. 团队成员与分工（Console Version）
+
+| 成员角色 | 姓名 | 核心模块 | 具体职责 |
+| :--- | :--- | :--- | :--- |
+| **组长（架构/本地化）** | Charles | 系统架构<br>双语本地化 | 1. 设计整体控制台程序架构与主菜单循环。<br>2. 实现中英文语言包（`ResourceBundle`），处理全局语言切换。<br>3. 负责 Git 版本控制、代码合并与最终审查。 |
+| **后端开发（核心业务）** | Ming | 员工管理<br>数据验证 | 1. 编写员工与部门控制台交互逻辑（`Scanner` 输入）。<br>2. 实现数据验证类（正则校验邮箱、手机号、密码复杂度）。<br>3. 使用原生 JDBC 将合法数据持久化到 MySQL。 |
+| **业务逻辑（计算引擎）** | Leo | 薪资计算<br>报表格式化 | 1. 编写薪资计算引擎（基本工资、考勤扣款、奖金等）。<br>2. 使用 `String.format` 输出可读性高的工资条。<br>3. 处理空指针、计算溢出等业务异常。 |
+| **数据库与测试（DBA/QA）** | Lucas | 数据库设计<br>权限与测试 | 1. 设计 MySQL 表结构，输出一键初始化脚本 `sql/init.sql`。<br>2. 编写控制台登录与角色权限拦截（管理员/普通员工）。<br>3. 执行黑盒测试，验证数据校验与双语切换。 |
+
+---
+
+## 15. 验收清单
+
+- [ ] 不依赖 Spring Boot / Vue
+- [ ] 使用原生 JDBC 连接 MySQL
+- [ ] `sql/init.sql` 可在空库执行
+- [ ] 默认管理员可登录
+- [ ] 中英文可切换，菜单和错误提示均本地化
+- [ ] 邮箱、手机号、密码校验生效
+- [ ] 员工 CRUD 正常
+- [ ] 薪资计算与工资条正常
+- [ ] 管理员/普通员工权限区分
+- [ ] `README.md` 中的命令可直接运行
