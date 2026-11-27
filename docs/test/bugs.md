@@ -6,9 +6,9 @@
 
 | 编号 | 级别 | 模块 | 问题 | 期望 | 处理结果 | 负责人 | 状态 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| BUG-001 | 建议 | 数据库 | `sys_department.dept_name` 未加唯一约束，可插入重名部门 | 部门名称唯一 | 待评估，暂不阻塞主流程 | 组长确认 | 待确认 |
+| BUG-001 | 建议 | 数据库 | `sys_department.dept_name` 未加唯一约束，可插入重名部门 | 部门名称唯一 | 已评估：现库 3 个部门无重名，部门量级小，暂不加 `uk_dept_name`；若后续出现重名部门再补唯一键与迁移 SQL | 姜锋 | 已闭环（建议项保留） |
 | BUG-002 | 严重 | 安全 | 早期分支未接入 JWT，业务接口可匿名访问 | 未登录返回 401 | 已在 `dev` 接入 Spring Security + JWT，`AuthApiTests` 覆盖 | 组长 | 已闭环 |
-| BUG-003 | 一般 | 构建 | 组员本机 JDK 1.8，无法编译 Boot 4 / Java 21 工程 | JDK 21+ 编译通过 | 已在 JDK 25 环境执行 `mvn clean test`，55 个测试通过 | 姜锋 / 组长 | 已闭环 |
+| BUG-003 | 一般 | 构建 | 终端默认 PATH 仅 JRE 1.8，直接编译 Boot 4 / Java 21 工程会失败 | JDK 21+ 编译通过 | 本机 `.jdks/openjdk-25` 配 `JAVA_HOME` 后，用 Maven Wrapper 3.10.0 执行 `mvnw clean test`，55 个测试通过 | 姜锋 / 组长 | 已闭环 |
 | BUG-004 | 严重 | 薪资 | `feature/salary-crud` 与 `dev` 各自新增一套薪资类，直接合并会 add/add 冲突 | 只保留一套薪资模块 | 已手工整合：保留 CRUD + 计算 + 报表 + 生成 | 组长 | 已闭环 |
 | BUG-005 | 一般 | 异常处理 | 薪资分支新增 `SalaryExceptionHandler`，与全局异常重复 | 统一走 `GlobalExceptionHandler` | 整合时未保留模块级处理器 | 组长 | 已闭环 |
 
@@ -18,10 +18,12 @@
 | --- | --- | --- | --- | --- |
 | 2026-11-18 | `dev` 薪资整合版 | 员工 30 + 登录 4 + 薪资 4 + 薪资 CRUD 16 + 上下文 1 | 55/55 通过 | 组长 |
 | 2026-11-18 | 本地 MySQL | 登录、薪资列表/分页/详情、CRUD、重复校验、报表、生成、401 | 通过，测试数据已清理 | 组长 |
+| 2026-11-18 | 本机（姜锋） | C7 独立回归 `mvnw clean test`：员工 30 + 登录 4 + 薪资 4 + 薪资 CRUD 16 + 上下文 1 | 55/55 通过，Failures 0 / Errors 0 / Skipped 0，BUILD SUCCESS（JDK 25 + Maven Wrapper 3.10.0，H2 内存库） | 姜锋 |
+| 2026-11-18 | 本机（姜锋） | 后端连本机 MySQL 冒烟：登录 / 错误密码 / 当前用户 / 薪资分页 / 详情 / 部门报表 / 重复生成 / 未登录 401 | 全部符合预期：admin/admin123 登录返回 JWT，错误密码提示 401，分页 3 条、详情正常，报表合计正确，重复生成幂等拦截，未登录返回 401；薪资新增/修改/删除由 `SalaryCrudApiTests` 16 例覆盖 | 姜锋 |
 
 ## 已知限制
 
 - 角色只写入 JWT，尚未做接口级权限（ADMIN/HR/EMPLOYEE）。
 - 薪资报表只统计有部门的员工（SQL 使用 INNER JOIN 部门）。
 - 生成工资只按历史 `base_pay` 生成，奖金/扣款暂为 0。
-- `sys_department.dept_name` 唯一约束待评估。
+- `sys_department.dept_name` 暂不加唯一键（现库无重名、部门量级小），后续出现重名再补 `uk_dept_name`。
