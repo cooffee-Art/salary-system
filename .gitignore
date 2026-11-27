@@ -5,6 +5,7 @@
 # ---------- Java 编译产物 ----------
 out/
 target/
+test-out/
 *.class
 *.jar
 *.war
@@ -35,6 +36,9 @@ dist/
 !.env.example
 *.log
 logs/
+
+# ---------- 本地跑测临时目录 ----------
+_run/
 
 # ---------- 操作系统 ----------
 .DS_Store

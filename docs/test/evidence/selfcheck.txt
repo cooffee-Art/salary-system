@@ -1,0 +1,74 @@
+==== 控制台版白盒自检 ====
+[1] 密码哈希 PBKDF2
+  PASS  哈希格式为 pbkdf2$sha256$...
+  PASS  正确密码校验通过
+  PASS  错误密码校验失败
+  PASS  空密码校验失败
+  PASS  哈希串被篡改后校验失败
+  PASS  两次哈希结果不同（随机盐）
+  PASS  init.sql 中 admin 哈希可用
+  PASS  init.sql 中 employee 哈希可用
+[2] 角色权限矩阵
+  PASS  管理员可做员工管理
+  PASS  管理员可做薪资管理
+  PASS  管理员可看部门报表
+  PASS  普通员工不能做员工管理
+  PASS  普通员工不能做薪资管理
+  PASS  普通员工不能看部门报表
+  PASS  普通员工可看本人信息
+  PASS  普通员工可看本人薪资
+  PASS  未登录一律拒绝
+[3] 双语语言包完整性
+  PASS  zh 有 key: login.backendJdbc 且非占位
+  PASS  zh 有 key: login.backendMemory 且非占位
+  PASS  zh 有 key: login.backendMemoryReason 且非占位
+  PASS  zh 有 key: permission.denied 且非占位
+  PASS  zh 有 key: permission.manageEmployee 且非占位
+  PASS  zh 有 key: permission.manageSalary 且非占位
+  PASS  zh 有 key: permission.viewReport 且非占位
+  PASS  zh 有 key: role.anonymous 且非占位
+  PASS  zh 有 key: login.failed 且非占位
+  PASS  zh 有 key: login.success 且非占位
+  PASS  zh 有 key: menu.employee 且非占位
+  PASS  zh 有 key: menu.mySalary 且非占位
+  PASS  zh 有 key: validation.email 且非占位
+  PASS  zh 有 key: validation.phone 且非占位
+  PASS  zh 有 key: validation.password 且非占位
+  PASS  zh 权限提示使用中文
+  PASS  en 有 key: login.backendJdbc 且非占位
+  PASS  en 有 key: login.backendMemory 且非占位
+  PASS  en 有 key: login.backendMemoryReason 且非占位
+  PASS  en 有 key: permission.denied 且非占位
+  PASS  en 有 key: permission.manageEmployee 且非占位
+  PASS  en 有 key: permission.manageSalary 且非占位
+  PASS  en 有 key: permission.viewReport 且非占位
+  PASS  en 有 key: role.anonymous 且非占位
+  PASS  en 有 key: login.failed 且非占位
+  PASS  en 有 key: login.success 且非占位
+  PASS  en 有 key: menu.employee 且非占位
+  PASS  en 有 key: menu.mySalary 且非占位
+  PASS  en 有 key: validation.email 且非占位
+  PASS  en 有 key: validation.phone 且非占位
+  PASS  en 有 key: validation.password 且非占位
+  PASS  en 权限提示使用英文
+[4] JDBC 登录（sys_user）
+  PASS  数据库可连接
+  PASS  admin/Admin@123 登录成功
+  PASS  admin 角色为 ADMIN
+  PASS  employee/User@123 登录成功
+  PASS  employee 角色为 EMPLOYEE
+  PASS  错误密码登录失败
+  PASS  密码大小写敏感
+  PASS  不存在的用户登录失败
+  PASS  空用户名登录失败
+  PASS  空密码登录失败
+  PASS  status=0 的账号不能登录
+[5] SQL 注入防护
+  PASS  用户名 ' OR 1=1 -- 不能登录
+  PASS  用户名 admin' -- 不能登录
+[6] 用户名唯一键 uk_username
+  PASS  admin 在库中存在
+  PASS  重复用户名被唯一键拒绝
+  PASS  拒绝后 admin 仍只有 1 条
+
+结果：通过 65 项，失败 0 项

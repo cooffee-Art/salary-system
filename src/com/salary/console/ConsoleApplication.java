@@ -4,6 +4,8 @@ import com.salary.console.i18n.I18n;
 import com.salary.console.model.Role;
 import com.salary.console.model.Session;
 import com.salary.console.service.AuthService;
+import com.salary.console.service.Permission;
+import com.salary.console.service.PermissionGuard;
 import com.salary.console.ui.InputReader;
 import com.salary.console.ui.Menu;
 import com.salary.console.ui.MenuItem;
@@ -108,16 +110,16 @@ public final class ConsoleApplication {
 
             if (session.role() == Role.ADMIN) {
                 items.add(new MenuItem("employee", "menu.employee",
-                        () -> notImplemented("module.employee")));
+                        () -> guarded(session, Permission.MANAGE_EMPLOYEE, "module.employee")));
                 items.add(new MenuItem("salary", "menu.salary",
-                        () -> notImplemented("module.salary")));
+                        () -> guarded(session, Permission.MANAGE_SALARY, "module.salary")));
                 items.add(new MenuItem("report", "menu.report",
-                        () -> notImplemented("module.report")));
+                        () -> guarded(session, Permission.VIEW_REPORT, "module.report")));
             } else {
                 items.add(new MenuItem("profile", "menu.profile",
-                        () -> notImplemented("module.profile")));
+                        () -> guarded(session, Permission.VIEW_OWN_PROFILE, "module.profile")));
                 items.add(new MenuItem("my-salary", "menu.mySalary",
-                        () -> notImplemented("module.mySalary")));
+                        () -> guarded(session, Permission.VIEW_OWN_SALARY, "module.mySalary")));
             }
 
             items.add(new MenuItem("language", "menu.switchLanguage", () -> {
@@ -144,6 +146,17 @@ public final class ConsoleApplication {
                 }
                 default -> selected.action().run();
             }
+        }
+    }
+
+    /**
+     * 统一入口：先过角色权限，再进入模块。
+     * 模块由其他成员实现后，把这里的 notImplemented(...) 换成对应 Service 调用即可，
+     * 权限判断不需要各模块各写一遍。
+     */
+    private void guarded(Session session, Permission permission, String moduleKey) {
+        if (PermissionGuard.require(session, permission)) {
+            notImplemented(moduleKey);
         }
     }
 
